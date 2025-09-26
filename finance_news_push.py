@@ -216,6 +216,8 @@ def generate_summary_html(summary_text):
 
 # AI 生成内容摘要（基于爬取的正文）
 def summarize(text):
+    completion = openai_client.chat.completions.create(
+        model=model_name, 
         messages=[
             {"role": "system", "content": """
              你是一名专业的财经新闻分析师，请根据以下新闻内容，按照以下步骤完成任务：
@@ -228,8 +230,8 @@ def summarize(text):
              """},
             {"role": "user", "content": text}
         ]
-    
-        return completion.choices[0].message.content.strip()
+    )
+    return completion.choices[0].message.content.strip()
 
 # 获取微信公众号access_token
 def get_access_token():
