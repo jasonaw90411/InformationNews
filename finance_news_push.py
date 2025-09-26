@@ -358,10 +358,13 @@ def send_news_to_wechat(access_token, news_content, summary_html_path):
     else:
         core_content = "内容生成失败"
 
-    # 使用GitHub Pages URL作为跳转链接
-    # 注意：需要替换为您实际的GitHub Pages URL
-    # 格式为: https://[username].github.io/[repository]/finance_summary.html
-    github_pages_url = "https://jasonaw90411.github.io/InformationNews/finance_summary.html"
+    # 使用GitHub Pages URL作为跳转链接，添加时间戳参数防止缓存
+    # 获取当前时间戳作为URL参数，防止缓存
+    timestamp = int(time.time())
+    
+    # 基础URL
+    base_url = "https://jasonaw90411.github.io/InformationNews/finance_summary.html"
+    github_pages_url = f"{base_url}?t={timestamp}"
     
     # 在GitHub Actions环境中，可以使用GITHUB_REPOSITORY环境变量来构建URL
     github_repo = os.environ.get('GITHUB_REPOSITORY', '')
@@ -369,7 +372,8 @@ def send_news_to_wechat(access_token, news_content, summary_html_path):
         # github_repo 格式通常为 "username/repository"
         parts = github_repo.split('/')
         if len(parts) == 2:
-            github_pages_url = f"https://{parts[0]}.github.io/{parts[1]}/finance_summary.html"
+            base_url = f"https://{parts[0]}.github.io/{parts[1]}/finance_summary.html"
+            github_pages_url = f"{base_url}?t={timestamp}"
     
     body = {
         "touser": openId.strip(),
