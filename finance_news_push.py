@@ -374,7 +374,7 @@ def send_news_to_wechat(access_token, news_content, summary_html_path):
     # 使用GitHub Pages URL作为跳转链接
     # 注意：需要替换为您实际的GitHub Pages URL
     # 格式为: https://[username].github.io/[repository]/finance_summary.html
-    github_pages_url = "https://[username].github.io/[repository]/finance_summary.html"
+    github_pages_url = "https://jasonaw90411.github.io/InformationNews/finance_summary.html"
     
     # 在GitHub Actions环境中，可以使用GITHUB_REPOSITORY环境变量来构建URL
     github_repo = os.environ.get('GITHUB_REPOSITORY', '')
