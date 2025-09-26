@@ -163,6 +163,9 @@ def generate_summary_html(summary_text):
     # 生成当前时间字符串（单独计算，避免f-string中的语法问题）
     current_time = datetime.now(pytz.timezone("Asia/Shanghai")).strftime("%Y年%m月%d日 %H:%M:%S")
     
+    # 获取时间戳，用于防止缓存
+    timestamp = int(time.time())
+    
     # 转义换行符为HTML<br>标签
     formatted_summary = summary_text.replace('\n', '<br>')
     
@@ -175,6 +178,9 @@ def generate_summary_html(summary_text):
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="format-detection" content="telephone=no">
         <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
         <title>财经新闻摘要</title>
         <style>
             /* 安全区域样式重置 */
@@ -253,7 +259,7 @@ def generate_summary_html(summary_text):
         <div class="container">
             <div class="summary-content">
                 <h1>财经新闻摘要</h1>
-                <div class="summary-meta">生成时间: {current_time}</div>
+                <div class="summary-meta">生成时间: {current_time} (版本: {timestamp})</div>
                 <div class="summary-body">
                     {formatted_summary}
                 </div>
@@ -265,6 +271,13 @@ def generate_summary_html(summary_text):
             document.addEventListener('DOMContentLoaded', function() {{
                 // 处理iOS Safari上的滚动问题
                 document.body.style.webkitOverflowScrolling = 'touch';
+                
+                // 防止缓存
+                window.onpageshow = function(event) {{
+                    if (event.persisted) {{
+                        window.location.reload();
+                    }}
+                }};
             }});
         </script>
     </body>
