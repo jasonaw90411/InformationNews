@@ -396,25 +396,21 @@ def send_news_to_wechat(access_token, news_content, summary_html_path):
 
 # 主函数
 def news_report():
-    print("===== 开始新闻报告流程 =====")
+    # 获取当前日期和时间段
+    today = today_date()
+    time_period = get_time_period()
+    print(f"🔄 开始生成{time_period}财经新闻推送，日期: {today}")
     
     # 1. 获取RSS文章
     print("🔄 正在获取RSS文章...")
-    articles_data, analysis_text = fetch_rss_articles(rss_feeds, max_articles=5)
-    print(f"✅ 文章获取完成，分析文本长度: {len(analysis_text) if analysis_text else 0}")
+    articles_data, _ = fetch_rss_articles(rss_feeds, max_articles=5)  # 不再使用analysis_text
+    print(f"✅ 文章获取完成")
     print(f"   文章分类数量: {len(articles_data)}")
     print(f"   文章类别: {list(articles_data.keys())}")
     
-    # 2. AI生成摘要
-    print("🤖 正在生成AI摘要...")
-    summary = summarize(analysis_text)
-    print(f"✅ 摘要生成完成，长度: {len(summary) if summary else 0}")
-    print(f"   摘要前50字符: {summary[:50] if summary else '无内容'}")
-    
-    # 3. 生成最终消息
-    today_str = today_date().strftime("%Y-%m-%d")
-    time_period = get_time_period()
-    final_summary = f"📅 {today_str} {time_period}财经新闻摘要\n\n✍️ {time_period}分析总结：\n{summary}\n\n---\n\n"
+    # 2. 生成最终消息（不再包含AI摘要）
+    today_str = today.strftime("%Y-%m-%d")
+    final_summary = f"📅 {today_str} {time_period}财经新闻\n\n---\n\n"
     
     print("📝 正在组装最终消息...")
     for category, content in articles_data.items():
@@ -422,16 +418,16 @@ def news_report():
             print(f"   添加{category}类文章，长度: {len(content)}")
             final_summary += f"## {category}\n{content}\n\n"
     
-    # 4. 获取access_token
+    # 3. 获取access_token
     access_token = get_access_token()
     if not access_token:
         print("❌ 获取access_token失败")
         return
     
-    # 5. 生成摘要HTML文件，用于点击查看详情
-    summary_html_path = generate_summary_html(summary)  # 只保存摘要部分
+    # 4. 生成HTML文件，使用完整内容
+    summary_html_path = generate_summary_html(final_summary)  # 使用完整内容
     
-    # 6. 发送消息到微信
+    # 5. 发送消息到微信
     response = send_news_to_wechat(access_token, final_summary, summary_html_path)
     
     if response.get("errcode") == 0:
