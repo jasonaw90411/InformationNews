@@ -200,15 +200,49 @@ def send_news_to_wechat(access_token, news_content):
     today_str = today.strftime("%Y年%m月%d日 %H:%M")
     time_period = get_time_period()
     
-    # 优化内容处理 - 可能过长的内容导致微信不显示
+    # 优化内容处理 - 处理可能导致显示问题的元素
     if isinstance(news_content, str):
-        # 检查内容是否包含过多的特殊格式或过长
-        # 尝试提取核心内容并简化
-        core_content = news_content
-        # 如果内容太长，截取一部分并添加说明
-        if len(news_content) > 2000:
-            core_content = news_content[:1500] + "\n\n...内容过长，剩余部分已省略"
+        # 1. 移除或替换特殊字符和表情符号
+        # 创建一个清理后的版本
+        clean_content = news_content
+        
+        # 替换常见表情符号
+        emoji_replacements = {
+            '📅': '[日期]',
+            '✍️': '[分析]',
+            '💲': '',
+            '💻': '',
+            '🇨🇳': '[中国]',
+            '🇺🇸': '[美国]',
+            '🌍': '[世界]',
+            '✅': '',
+            '🤖': '[AI]',
+            '📝': '',
+            '📤': ''
+        }
+        
+        for emoji, replacement in emoji_replacements.items():
+            clean_content = clean_content.replace(emoji, replacement)
+        
+        # 2. 移除或简化Markdown格式
+        # 移除###和####标题标记
+        clean_content = clean_content.replace('### ', '')
+        clean_content = clean_content.replace('#### ', '')
+        
+        # 3. 处理换行符，确保正确显示
+        # 确保使用标准换行符
+        clean_content = clean_content.replace('\r\n', '\n')
+        
+        # 4. 处理长度限制
+        if len(clean_content) > 2000:
+            core_content = clean_content[:1500] + "\n\n[内容过长，已省略后续部分]"
             print("⚠️ 内容过长，已截断至1500字符")
+        else:
+            core_content = clean_content
+            print("ℹ️ 内容长度合适，无需截断")
+            
+        print(f"清理后内容前50字符: {core_content[:50]}...")
+        print(f"清理后内容长度: {len(core_content)}")
     else:
         core_content = "内容生成失败"
 
