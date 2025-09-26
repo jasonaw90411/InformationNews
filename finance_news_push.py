@@ -202,7 +202,7 @@ def send_news_to_wechat(access_token, news_content):
                 "value": f"{today_str} - {time_period}推送"
             },
             "content": {
-                "value": news_content[:500]  # 限制长度，避免超出模板消息限制
+                "value": news_content[:1024]  # 微信模板消息单字段上限2048字符，设置1024以保证完整推送
             },
             "remark": {
                 "value": f"{time_period}财经简报，更多详细内容请查看公众号"
