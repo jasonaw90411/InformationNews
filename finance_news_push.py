@@ -182,7 +182,7 @@ def get_access_token():
     access_token = response.get('access_token')
     return access_token
 
-# 发送财经新闻到微信 - 使用图文消息接口
+# 发送财经新闻到微信
 def send_news_to_wechat(access_token, news_content):
     # 添加调试信息
     print(f"===== 发送内容调试信息 =====")
@@ -191,6 +191,11 @@ def send_news_to_wechat(access_token, news_content):
     print(f"news_content前100字符: {news_content[:100] if isinstance(news_content, str) else '非字符串'}")
     print(f"========================")
     
+    # touser 就是 openID
+    # template_id 就是模板ID
+    # url 就是点击模板跳转的url
+    # data按模板格式组织
+
     today = datetime.now(pytz.timezone("Asia/Shanghai"))
     today_str = today.strftime("%Y年%m月%d日 %H:%M")
     time_period = get_time_period()
@@ -219,37 +224,19 @@ def send_news_to_wechat(access_token, news_content):
         for emoji, replacement in emoji_replacements.items():
             clean_content = clean_content.replace(emoji, replacement)
         
-        # 2. 转换Markdown格式为HTML格式（简单转换，适用于微信图文消息）
-        # 替换标题标记
-        clean_content = clean_content.replace('## ', '<h2>')
-        clean_content = clean_content.replace('### ', '<h3>')
-        clean_content = clean_content.replace('#### ', '<h4>')
-        # 简单添加标题结束标签
-        lines = clean_content.split('\n')
-        for i, line in enumerate(lines):
-            if line.startswith('<h2>'):
-                lines[i] = line + '</h2>'
-            elif line.startswith('<h3>'):
-                lines[i] = line + '</h3>'
-            elif line.startswith('<h4>'):
-                lines[i] = line + '</h4>'
-            # 转换链接格式 [text](url) -> <a href="url">text</a>
-            # 简单处理，不处理复杂情况
-            if '](' in line and line.count('[') == line.count(']') and line.count('(') == line.count(')'):
-                start = line.find('[')
-                mid = line.find('](')
-                end = line.find(')')
-                if start >= 0 and mid >= 0 and end >= 0:
-                    text = line[start+1:mid]
-                    url = line[mid+2:end]
-                    line = line[:start] + f'<a href="{url}">{text}</a>' + line[end+1:]
-                    lines[i] = line
-        clean_content = '<br/>'.join(lines)
+        # 2. 移除或简化Markdown格式
+        # 移除###和####标题标记
+        clean_content = clean_content.replace('### ', '')
+        clean_content = clean_content.replace('#### ', '')
         
-        # 3. 处理长度限制 - 图文消息内容限制在100000字符以内
-        if len(clean_content) > 100000:
-            core_content = clean_content[:95000] + "<br/><br/>[内容过长，已省略后续部分]"
-            print("⚠️ 内容过长，已截断至95000字符")
+        # 3. 处理换行符，确保正确显示
+        # 确保使用标准换行符
+        clean_content = clean_content.replace('\r\n', '\n')
+        
+        # 4. 处理长度限制
+        if len(clean_content) > 2000:
+            core_content = clean_content[:1500] + "\n\n[内容过长，已省略后续部分]"
+            print("⚠️ 内容过长，已截断至1500字符")
         else:
             core_content = clean_content
             print("ℹ️ 内容长度合适，无需截断")
@@ -258,59 +245,37 @@ def send_news_to_wechat(access_token, news_content):
         print(f"清理后内容长度: {len(core_content)}")
     else:
         core_content = "内容生成失败"
-    
-    # 构造图文消息
-    # 标题设置为当天日期和时间
-    title = f"{today_str} {time_period}财经新闻摘要"
-    
-    # 描述可以简短摘要
-    description = f"{time_period}财经简报，共{len(news_content) if isinstance(news_content, str) else 0}字符"
-    
-    # 图文消息body结构
+
     body = {
         "touser": openId.strip(),
-        "msgtype": "news",
-        "news": {
-            "articles": [
-                {
-                    "title": title,
-                    "description": description,
-                    "url": "https://weixin.qq.com",  # 点击图文消息跳转链接
-                    "picurl": "",  # 可选，图文消息的图片链接
-                }
-            ]
+        "template_id": template_id.strip(),
+        "url": "https://weixin.qq.com",
+        "data": {
+            "date": {
+                "value": f"{today_str} - {time_period}推送"
+            },
+            "content": {
+                "value": core_content
+            },
+            "remark": {
+                "value": f"{time_period}财经简报，共{len(news_content) if isinstance(news_content, str) else 0}字符"
+            }
         }
     }
     
     # 打印body的结构用于调试
     print(f"===== 发送消息体调试 =====")
-    print(f"图文消息标题: {body['news']['articles'][0]['title']}")
-    print(f"图文消息描述: {body['news']['articles'][0]['description']}")
-    print(f"图文消息URL: {body['news']['articles'][0]['url']}")
+    print(f"字段检查 - date: {'存在' if 'date' in body['data'] else '不存在'}")
+    print(f"字段检查 - content: {'存在' if 'content' in body['data'] else '不存在'}")
+    print(f"字段检查 - remark: {'存在' if 'remark' in body['data'] else '不存在'}")
+    print(f"content.value长度: {len(body['data']['content']['value'])}")
+    print(f"content.value前50字符: {body['data']['content']['value'][:50]}...")
     print(f"========================")
     
-    # 使用自定义消息接口发送（支持图文消息）
-    url = 'https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token={}'.format(access_token)
-    response = requests.post(url, json=body)
+    url = 'https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}'.format(access_token)
+    response = requests.post(url, json.dumps(body))
     print(f"响应状态: {response.status_code}")
     print(f"响应内容: {response.text}")
-    
-    # 如果自定义消息发送成功，再发送一条文本消息作为补充（因为图文消息的内容主要在网页中）
-    if response.json().get("errcode") == 0:
-        # 发送文本消息作为主要内容
-        text_body = {
-            "touser": openId.strip(),
-            "msgtype": "text",
-            "text": {
-                "content": core_content
-            }
-        }
-        print("📤 正在发送文本消息作为内容补充...")
-        text_response = requests.post(url, json=text_body)
-        print(f"文本消息响应状态: {text_response.status_code}")
-        print(f"文本消息响应内容: {text_response.text}")
-        return text_response.json()
-    
     return response.json()
 
 # 主函数
