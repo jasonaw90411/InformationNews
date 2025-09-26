@@ -296,15 +296,7 @@ def summarize(text):
     completion = openai_client.chat.completions.create(
         model=model_name, 
         messages=[
-            {"role": "system", "content": """
-             你是一名专业的财经新闻分析师，请根据以下新闻内容，按照以下步骤完成任务：
-             1. 提取新闻中涉及的主要行业和主题，找出近1天涨幅最高的3个行业或主题，以及近3天涨幅较高且此前2周表现平淡的3个行业/主题。（如新闻未提供具体涨幅，请结合描述和市场情绪推测热点）
-             2. 针对每个热点，输出：
-                - 催化剂：分析近期上涨的可能原因（政策、数据、事件、情绪等）。
-                - 复盘：梳理过去3个月该行业/主题的核心逻辑、关键动态与阶段性走势。
-                - 展望：判断该热点是短期炒作还是有持续行情潜力。
-             3. 将以上分析整合为一篇1500字以内的财经热点摘要，逻辑清晰、重点突出，适合专业投资者阅读。
-             """},
+            {"role": "system", "content":"你是一位经验丰富、逻辑严谨的财经新闻分析师，服务对象为券商分析师、基金经理、金融研究员、宏观策略师等专业人士。请基于以下财经新闻原文内容，完成高质量的内容理解与结构化总结，形成一份专业、精准、清晰的财经要点摘要，用于支持机构投资者的日常研判工作。【输出要求】1.全文控制在 2000 字以内，内容精炼、逻辑清晰；2.从宏观政策、金融市场、行业动态、公司事件、风险提示等角度进行分类总结；3.每一部分要突出数据支持、趋势研判、可能的市场影响；4.明确指出新闻背后的核心变量或政策意图，并提出投资视角下的参考意义；5.语气专业、严谨、无情绪化表达，适配专业机构投研阅读习惯；6.禁止套话，不重复新闻原文，可用条列式增强结构性；7.如涉及数据和预测，请标注来源或指出主张机构（如高盛、花旗等）；8.若原文较多内容无关财经市场，可酌情略去，只保留关键影响要素。"},
             {"role": "user", "content": text}
         ]
     )
@@ -335,39 +327,7 @@ def send_news_to_wechat(access_token, news_content, summary_html_path):
     
     # 优化内容处理 - 处理可能导致显示问题的元素
     if isinstance(news_content, str):
-        # 1. 移除或替换特殊字符和表情符号
-        # 创建一个清理后的版本
-        clean_content = news_content
-        
-        # 替换常见表情符号
-        emoji_replacements = {
-            '📅': '[日期]',
-            '✍️': '[分析]',
-            '💲': '',
-            '💻': '',
-            '🇨🇳': '[中国]',
-            '🇺🇸': '[美国]',
-            '🌍': '[世界]',
-            '✅': '',
-            '🤖': '[AI]',
-            '📝': '',
-            '📤': ''
-        }
-        
-        for emoji, replacement in emoji_replacements.items():
-            clean_content = clean_content.replace(emoji, replacement)
-        
-        # 2. 移除或简化Markdown格式
-        # 移除###和####标题标记
-        clean_content = clean_content.replace('### ', '')
-        clean_content = clean_content.replace('#### ', '')
-        
-        # 3. 处理换行符，确保正确显示
-        # 确保使用标准换行符
-        clean_content = clean_content.replace('\r\n', '\n')
-        
-        # 4. 处理长度限制 - 移除限制，展示完整内容
-        core_content = clean_content
+        core_content = news_content
     else:
         core_content = "内容生成失败"
 
