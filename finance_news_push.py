@@ -255,7 +255,8 @@ def send_news_to_wechat(access_token, news_content):
                 "value": f"{today_str} - {time_period}推送"
             },
             "content": {
-                "value": core_content
+                # "value": core_content
+                "value": "测试测试测试测试测试测试测试测试测试测试"
             },
             "remark": {
                 "value": f"{time_period}财经简报，共{len(news_content) if isinstance(news_content, str) else 0}字符"
