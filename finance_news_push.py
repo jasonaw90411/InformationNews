@@ -184,6 +184,13 @@ def get_access_token():
 
 # 发送财经新闻到微信
 def send_news_to_wechat(access_token, news_content):
+    # 添加调试信息
+    print(f"===== 发送内容调试信息 =====")
+    print(f"传入的news_content类型: {type(news_content)}")
+    print(f"news_content长度: {len(news_content) if isinstance(news_content, str) else '非字符串'}")
+    print(f"news_content前100字符: {news_content[:100] if isinstance(news_content, str) else '非字符串'}")
+    print(f"========================")
+    
     # touser 就是 openID
     # template_id 就是模板ID
     # url 就是点击模板跳转的url
@@ -202,7 +209,7 @@ def send_news_to_wechat(access_token, news_content):
                 "value": f"{today_str} - {time_period}推送"
             },
             "content": {
-                "value": news_content[:1500]  # 微信模板消息单字段上限2048字符，设置1024以保证完整推送
+                "value": news_content[:1500] if isinstance(news_content, str) else "内容生成失败"
             },
             "remark": {
                 "value": f"{time_period}财经简报，更多详细内容请查看公众号"
@@ -216,19 +223,37 @@ def send_news_to_wechat(access_token, news_content):
 
 # 主函数
 def news_report():
+    print("===== 开始新闻报告流程 =====")
+    
     # 1. 获取RSS文章
+    print("🔄 正在获取RSS文章...")
     articles_data, analysis_text = fetch_rss_articles(rss_feeds, max_articles=5)
+    print(f"✅ 文章获取完成，分析文本长度: {len(analysis_text) if analysis_text else 0}")
+    print(f"   文章分类数量: {len(articles_data)}")
+    print(f"   文章类别: {list(articles_data.keys())}")
     
     # 2. AI生成摘要
+    print("🤖 正在生成AI摘要...")
     summary = summarize(analysis_text)
-
+    print(f"✅ 摘要生成完成，长度: {len(summary) if summary else 0}")
+    print(f"   摘要前50字符: {summary[:50] if summary else '无内容'}")
+    
     # 3. 生成最终消息
     today_str = today_date().strftime("%Y-%m-%d")
     time_period = get_time_period()
     final_summary = f"📅 {today_str} {time_period}财经新闻摘要\n\n✍️ {time_period}分析总结：\n{summary}\n\n---\n\n"
+    
+    print("📝 正在组装最终消息...")
     for category, content in articles_data.items():
         if content.strip():
+            print(f"   添加{category}类文章，长度: {len(content)}")
             final_summary += f"## {category}\n{content}\n\n"
+    
+    # 调试最终消息
+    print(f"✅ 最终消息组装完成")
+    print(f"   最终消息长度: {len(final_summary)}")
+    print(f"   最终消息前100字符: {final_summary[:100]}")
+    print(f"   最终消息是否为空: {not bool(final_summary.strip())}")
     
     # 4. 获取access_token
     access_token = get_access_token()
