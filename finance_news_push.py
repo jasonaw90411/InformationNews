@@ -84,16 +84,17 @@ def get_time_period():
 # 爬取网页正文 (用于 AI 分析)
 def fetch_article_text(url):
     try:
-        print(f"📰 正在爬取文章内容: {url}")
+        # 移除爬取文章开始的打印
         article = Article(url)
         article.download()
         article.parse()
         text = article.text[:1500]  # 限制长度，防止超出 API 输入限制
         if not text:
-            print(f"⚠️ 文章内容为空: {url}")
+            # 移除内容为空的打印
+            pass
         return text
     except Exception as e:
-        print(f"❌ 文章爬取失败: {url}，错误: {e}")
+        # 移除爬取失败的打印
         return "（未能获取文章正文）"
 
 # 添加 User-Agent 头
@@ -111,9 +112,9 @@ def fetch_feed_with_retry(url, retries=3, delay=5):
             if feed and hasattr(feed, 'entries') and len(feed.entries) > 0:
                 return feed
         except Exception as e:
-            print(f"⚠️ 第 {i+1} 次请求 {url} 失败: {e}")
+            # 移除失败重试的打印
             time.sleep(delay)
-    print(f"❌ 跳过 {url}, 尝试 {retries} 次后仍失败。")
+    # 移除最终失败的打印
     return None
 
 # 获取RSS内容（爬取正文用于分析）
@@ -124,26 +125,26 @@ def fetch_rss_articles(rss_feeds, max_articles=5):
     for category, sources in rss_feeds.items():
         category_content = ""
         for source, url in sources.items():
-            print(f"📡 正在获取 {source} 的 RSS 源: {url}")
+            # 移除RSS获取开始的打印
             feed = fetch_feed_with_retry(url)
             if not feed:
-                print(f"⚠️ 无法获取 {source} 的 RSS 数据")
+                # 移除RSS获取失败的打印
                 continue
-            print(f"✅ {source} RSS 获取成功，共 {len(feed.entries)} 条新闻")
+            # 移除RSS获取成功的打印
 
             articles = []  # 每个source都需要重新初始化列表
             for entry in feed.entries[:5]:
                 title = entry.get('title', '无标题')
                 link = entry.get('link', '') or entry.get('guid', '')
                 if not link:
-                    print(f"⚠️ {source} 的新闻 '{title}' 没有链接，跳过")
+                    # 移除无链接跳过的打印
                     continue
 
                 # 爬取正文用于分析
                 article_text = fetch_article_text(link)
                 analysis_text += f"【{title}】\n{article_text}\n\n"
 
-                print(f"🔹 {source} - {title} 获取成功")
+                # 移除单条新闻获取成功的打印
                 articles.append(f"[{title}]({link})")
 
             if articles:
@@ -302,19 +303,13 @@ def get_access_token():
     url = 'https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={}&secret={}' \
         .format(appID.strip(), appSecret.strip())
     response = requests.get(url).json()
-    print(response)
+    # 移除响应打印
     access_token = response.get('access_token')
     return access_token
 
 # 发送财经新闻到微信
 def send_news_to_wechat(access_token, news_content, summary_html_path):
-    # 添加调试信息
-    print(f"===== 发送内容调试信息 =====")
-    print(f"传入的news_content类型: {type(news_content)}")
-    print(f"news_content长度: {len(news_content) if isinstance(news_content, str) else '非字符串'}")
-    print(f"news_content前100字符: {news_content[:100] if isinstance(news_content, str) else '非字符串'}")
-    print(f"摘要HTML路径: {summary_html_path}")
-    print(f"========================")
+    # 删除调试信息
     
     # touser 就是 openID
     # template_id 就是模板ID
@@ -358,16 +353,8 @@ def send_news_to_wechat(access_token, news_content, summary_html_path):
         # 确保使用标准换行符
         clean_content = clean_content.replace('\r\n', '\n')
         
-        # 4. 处理长度限制
-        if len(clean_content) > 2000:
-            core_content = clean_content[:1500] + "\n\n[内容过长，点击查看完整摘要]"
-            print("⚠️ 内容过长，已截断至1500字符")
-        else:
-            core_content = clean_content
-            print("ℹ️ 内容长度合适，无需截断")
-            
-        print(f"清理后内容前50字符: {core_content[:50]}...")
-        print(f"清理后内容长度: {len(core_content)}")
+        # 4. 处理长度限制 - 移除限制，展示完整内容
+        core_content = clean_content
     else:
         core_content = "内容生成失败"
 
@@ -384,8 +371,6 @@ def send_news_to_wechat(access_token, news_content, summary_html_path):
         if len(parts) == 2:
             github_pages_url = f"https://{parts[0]}.github.io/{parts[1]}/finance_summary.html"
     
-    print(f"📌 使用GitHub Pages URL: {github_pages_url}")
-    
     body = {
         "touser": openId.strip(),
         "template_id": template_id.strip(),
@@ -398,7 +383,7 @@ def send_news_to_wechat(access_token, news_content, summary_html_path):
                 "value": core_content
             },
             "remark": {
-                "value": f"{time_period}财经简报，点击查看完整摘要"
+                "value": f"{time_period}财经简报"  
             }
         }
     }
@@ -406,8 +391,7 @@ def send_news_to_wechat(access_token, news_content, summary_html_path):
     
     url = 'https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}'.format(access_token)
     response = requests.post(url, json.dumps(body))
-    print(f"响应状态: {response.status_code}")
-    print(f"响应内容: {response.text}")
+    # 移除响应状态打印
     return response.json()
 
 # 主函数
@@ -438,12 +422,6 @@ def news_report():
             print(f"   添加{category}类文章，长度: {len(content)}")
             final_summary += f"## {category}\n{content}\n\n"
     
-    # 调试最终消息
-    print(f"✅ 最终消息组装完成")
-    print(f"   最终消息长度: {len(final_summary)}")
-    print(f"   最终消息前100字符: {final_summary[:100]}")
-    print(f"   最终消息是否为空: {not bool(final_summary.strip())}")
-    
     # 4. 获取access_token
     access_token = get_access_token()
     if not access_token:
@@ -452,10 +430,8 @@ def news_report():
     
     # 5. 生成摘要HTML文件，用于点击查看详情
     summary_html_path = generate_summary_html(summary)  # 只保存摘要部分
-    print(f"📄 摘要HTML文件已生成: {summary_html_path}")
     
     # 6. 发送消息到微信
-    print(f"📤 正在发送{time_period}财经新闻摘要到微信")
     response = send_news_to_wechat(access_token, final_summary, summary_html_path)
     
     if response.get("errcode") == 0:
