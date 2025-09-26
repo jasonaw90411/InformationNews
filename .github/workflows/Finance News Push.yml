@@ -36,12 +36,12 @@ jobs:
       with:
         python-version: "3.12"
     - name: Install dependencies
-      run:
+      run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install openai feedparser newspaper3k pytz lxml_html_clean
     - name: Run News Report
-      run:
+      run: |
         python finance_news_push.py
       env:
         APP_ID: ${{ secrets.APP_ID }}
