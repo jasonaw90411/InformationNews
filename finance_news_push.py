@@ -15,12 +15,29 @@ appSecret = os.environ.get("APP_SECRET")
 openId = os.environ.get("OPEN_ID")
 template_id = os.environ.get("TEMPLATE_ID")
 
-# OpenAI API Key
-openai_api_key = os.environ.get("OPENAI_API_KEY")
-if not openai_api_key:
-    raise ValueError("环境变量 OPENAI_API_KEY 未设置!")
+# 选择使用的AI服务 (deepseek 或 alimind)
+ai_service = os.environ.get("AI_SERVICE", "deepseek")
 
-openai_client = OpenAI(api_key=openai_api_key, base_url="https://api.deepseek.com/v1")
+if ai_service == "deepseek":
+    # DeepSeek API Key
+    api_key = os.environ.get("DEEPSEEK_API_KEY")
+    if not api_key:
+        raise ValueError("环境变量 DEEPSEEK_API_KEY 未设置!")
+    api_base_url = "https://api.deepseek.com/v1"
+    model_name = "deepseek-chat"
+elif ai_service == "alimind":
+    # 阿里千文API配置
+    api_key = os.environ.get("ALI_MIND_API_KEY")
+    if not api_key:
+        raise ValueError("环境变量 ALI_MIND_API_KEY 未设置!")
+    api_base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"  # 阿里千文兼容OpenAI接口的地址
+    model_name = "qwen-turbo"  # 阿里千文模型名称
+else:
+    raise ValueError(f"不支持的AI服务类型: {ai_service}")
+
+# 初始化OpenAI客户端
+openai_client = OpenAI(api_key=api_key, base_url=api_base_url)
+print(f"使用AI服务: {ai_service}, 模型: {model_name}")
 
 # RSS源地址列表
 rss_feeds = {
@@ -139,7 +156,7 @@ def fetch_rss_articles(rss_feeds, max_articles=5):
 # AI 生成内容摘要（基于爬取的正文）
 def summarize(text):
     completion = openai_client.chat.completions.create(
-        model="deepseek-chat",
+        model=model_name,
         messages=[
             {"role": "system", "content": """
              你是一名专业的财经新闻分析师，请根据以下新闻内容，按照以下步骤完成任务：

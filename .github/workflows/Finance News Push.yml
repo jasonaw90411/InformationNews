@@ -9,7 +9,16 @@ on:
     - cron: '0 1 * * *'
     # 北京时间下午5点 (UTC上午9点)
     - cron: '0 9 * * *'
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
+    inputs:
+      ai_service:
+        description: '选择AI服务 (deepseek 或 alimind)'
+        required: false
+        default: 'deepseek'
+        type: choice
+        options:
+        - deepseek
+        - alimind
 
 permissions:
   contents: read
@@ -27,16 +36,18 @@ jobs:
       with:
         python-version: "3.12"
     - name: Install dependencies
-      run: |
+      run:
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install openai feedparser newspaper3k pytz lxml_html_clean
     - name: Run News Report
-      run: |
+      run:
         python finance_news_push.py
       env:
         APP_ID: ${{ secrets.APP_ID }}
         APP_SECRET: ${{ secrets.APP_SECRET }}
         OPEN_ID: ${{ secrets.OPEN_ID }}
         TEMPLATE_ID: ${{ secrets.TEMPLATE_ID }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        ALI_MIND_API_KEY: ${{ secrets.ALI_MIND_API_KEY }}
+        AI_SERVICE: ${{ inputs.ai_service || 'deepseek' }}
