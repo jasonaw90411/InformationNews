@@ -14,7 +14,7 @@ on:
       ai_service:
         description: '选择AI服务 (deepseek 或 alimind)'
         required: false
-        default: 'deepseek'
+        default: 'alimind'
         type: choice
         options:
         - deepseek
