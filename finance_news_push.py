@@ -380,14 +380,24 @@ def news_report():
     
     # 1. 获取RSS文章
     print("🔄 正在获取RSS文章...")
-    articles_data, _ = fetch_rss_articles(rss_feeds, max_articles=5)  # 不再使用analysis_text
+    articles_data, analysis_text = fetch_rss_articles(rss_feeds, max_articles=5)
     print(f"✅ 文章获取完成")
     print(f"   文章分类数量: {len(articles_data)}")
     print(f"   文章类别: {list(articles_data.keys())}")
     
-    # 2. 生成最终消息（不再包含AI摘要）
+    # 2. 使用AI生成财经新闻摘要
     today_str = today.strftime("%Y-%m-%d")
-    final_summary = f"📅 {today_str} {time_period}财经新闻\n\n---\n\n"
+    final_summary = ""
+    
+    try:
+        print("🧠 正在生成AI财经摘要...")
+        ai_summary = summarize(analysis_text)
+        print(f"✅ AI摘要生成完成，长度: {len(ai_summary)}字符")
+        final_summary = f"📅 **{today_str} 财经新闻摘要**\n\n✍️ **今日分析总结：**\n{ai_summary}\n\n---\n\n"
+    except Exception as e:
+        print(f"❌ AI摘要生成失败: {str(e)}")
+        final_summary = f"📅 **{today_str} 财经新闻摘要**\n\n✍️ **今日分析总结：**\nAI摘要生成失败，请查看系统日志获取详细信息\n\n---\n\n"
+
     
     print("📝 正在组装最终消息...")
     for category, content in articles_data.items():
