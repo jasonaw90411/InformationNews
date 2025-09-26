@@ -249,7 +249,7 @@ def send_news_to_wechat(access_token, news_content):
     body = {
         "touser": openId.strip(),
         "template_id": template_id.strip(),
-        "url": "https://weixin.qq.com",
+        "url": "",  
         "data": {
             "date": {
                 "value": f"{today_str} - {time_period}推送"
