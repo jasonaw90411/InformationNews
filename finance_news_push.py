@@ -154,9 +154,68 @@ def fetch_rss_articles(rss_feeds, max_articles=5):
     return news_data, analysis_text
 
 # AI 生成内容摘要（基于爬取的正文）
+# 生成完整新闻摘要HTML文件
+def generate_summary_html(summary_text):
+    # 创建同层级目录用于存放HTML文件
+    html_dir = 'news_details'
+    if not os.path.exists(html_dir):
+        os.makedirs(html_dir)
+    
+    # 生成带时间戳的文件名
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    html_filename = os.path.join(html_dir, f'finance_summary_{timestamp}.html')
+    
+    # 生成当前时间字符串（单独计算，避免f-string中的语法问题）
+    current_time = datetime.now(pytz.timezone("Asia/Shanghai")).strftime("%Y年%m月%d日 %H:%M:%S")
+    
+    # 转义换行符为HTML<br>标签
+    formatted_summary = summary_text.replace('\n', '<br>')
+    
+    # 生成HTML内容
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>财经新闻摘要</title>
+        <style>
+            body {{
+                font-family: 'Microsoft YaHei', Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }}
+            h1, h2, h3 {{ color: #2c3e50; }}
+            .summary-content {{ background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+            .summary-meta {{ color: #7f8c8d; font-size: 0.9em; margin-bottom: 20px; }}
+        </style>
+    </head>
+    <body>
+        <div class="summary-content">
+            <h1>财经新闻摘要</h1>
+            <div class="summary-meta">生成时间: {current_time}</div>
+            <hr>
+            <div class="summary-body">
+                {formatted_summary}
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # 写入文件
+    with open(html_filename, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    
+    # 返回文件的相对路径
+    return html_filename
+
+# AI 生成内容摘要（基于爬取的正文）
 def summarize(text):
-    completion = openai_client.chat.completions.create(
-        model=model_name,
         messages=[
             {"role": "system", "content": """
              你是一名专业的财经新闻分析师，请根据以下新闻内容，按照以下步骤完成任务：
@@ -169,8 +228,8 @@ def summarize(text):
              """},
             {"role": "user", "content": text}
         ]
-    )
-    return completion.choices[0].message.content.strip()
+    
+        return completion.choices[0].message.content.strip()
 
 # 获取微信公众号access_token
 def get_access_token():
@@ -183,12 +242,13 @@ def get_access_token():
     return access_token
 
 # 发送财经新闻到微信
-def send_news_to_wechat(access_token, news_content):
+def send_news_to_wechat(access_token, news_content, summary_html_path):
     # 添加调试信息
     print(f"===== 发送内容调试信息 =====")
     print(f"传入的news_content类型: {type(news_content)}")
     print(f"news_content长度: {len(news_content) if isinstance(news_content, str) else '非字符串'}")
     print(f"news_content前100字符: {news_content[:100] if isinstance(news_content, str) else '非字符串'}")
+    print(f"摘要HTML路径: {summary_html_path}")
     print(f"========================")
     
     # touser 就是 openID
@@ -235,7 +295,7 @@ def send_news_to_wechat(access_token, news_content):
         
         # 4. 处理长度限制
         if len(clean_content) > 2000:
-            core_content = clean_content[:1500] + "\n\n[内容过长，已省略后续部分]"
+            core_content = clean_content[:1500] + "\n\n[内容过长，点击查看完整摘要]"
             print("⚠️ 内容过长，已截断至1500字符")
         else:
             core_content = clean_content
@@ -246,10 +306,15 @@ def send_news_to_wechat(access_token, news_content):
     else:
         core_content = "内容生成失败"
 
+    # 使用生成的HTML文件作为跳转链接
+    # 注意：在实际微信环境中，需要将此路径转换为可公开访问的URL
+    # 这里使用相对路径，在本地运行的环境中可以正常访问
+    html_url = f"file://{os.path.abspath(summary_html_path)}"
+    
     body = {
         "touser": openId.strip(),
         "template_id": template_id.strip(),
-        "url": "",  
+        "url": html_url,  # 使用摘要HTML文件作为跳转链接
         "data": {
             "date": {
                 "value": f"{today_str} - {time_period}推送"
@@ -258,7 +323,7 @@ def send_news_to_wechat(access_token, news_content):
                 "value": core_content
             },
             "remark": {
-                "value": f"{time_period}财经简报，共{len(news_content) if isinstance(news_content, str) else 0}字符"
+                "value": f"{time_period}财经简报，点击查看完整摘要"
             }
         }
     }
@@ -310,9 +375,13 @@ def news_report():
         print("❌ 获取access_token失败")
         return
     
-    # 5. 发送消息到微信
+    # 5. 生成摘要HTML文件，用于点击查看详情
+    summary_html_path = generate_summary_html(summary)  # 只保存摘要部分
+    print(f"📄 摘要HTML文件已生成: {summary_html_path}")
+    
+    # 6. 发送消息到微信
     print(f"📤 正在发送{time_period}财经新闻摘要到微信")
-    response = send_news_to_wechat(access_token, final_summary)
+    response = send_news_to_wechat(access_token, final_summary, summary_html_path)
     
     if response.get("errcode") == 0:
         print(f"✅ {time_period}财经新闻推送成功")
