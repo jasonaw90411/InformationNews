@@ -59,4 +59,4 @@ jobs:
         TEMPLATE_ID: ${{ secrets.TEMPLATE_ID }}
         DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         ALI_MIND_API_KEY: ${{ secrets.ALI_MIND_API_KEY }}
-        AI_SERVICE: ${{ inputs.ai_service || 'deepseek' }}
+        AI_SERVICE: ${{ inputs.ai_service || 'alimind' }}
