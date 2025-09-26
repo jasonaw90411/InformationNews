@@ -1,0 +1,95 @@
+
+    <!DOCTYPE html>
+    <html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="format-detection" content="telephone=no">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <title>财经新闻摘要</title>
+        <style>
+            /* 安全区域样式重置 */
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            
+            /* 基础样式 */
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+                line-height: 1.7;
+                color: #333;
+                max-width: 100%;
+                margin: 0;
+                padding: 0;
+                background-color: #f8f8f8;
+                -webkit-text-size-adjust: 100%;
+                -webkit-tap-highlight-color: transparent;
+            }
+            
+            /* 容器样式 */
+            .container {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px 15px;
+                background-color: #fff;
+                min-height: 100vh;
+            }
+            
+            /* 标题样式 */
+            h1, h2, h3 {
+                color: #2c3e50;
+                margin: 15px 0 10px 0;
+                line-height: 1.4;
+            }
+            
+            h1 { font-size: 22px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+            h2 { font-size: 20px; }
+            h3 { font-size: 18px; }
+            
+            /* 内容样式 */
+            .summary-content { background: white; padding: 0; }
+            .summary-meta {
+                color: #666;
+                font-size: 14px;
+                margin-bottom: 15px;
+                padding-bottom: 15px;
+                border-bottom: 1px solid #eee;
+            }
+            
+            .summary-body {
+                font-size: 16px;
+                color: #333;
+            }
+            
+            /* 段落样式 */
+            .summary-body > div { margin-bottom: 15px; }
+            
+            /* 响应式设计 */
+            @media (max-width: 480px) {
+                .container { padding: 15px 12px; }
+                h1 { font-size: 20px; }
+                h2 { font-size: 18px; }
+                h3 { font-size: 16px; }
+                .summary-body { font-size: 15px; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="summary-content">
+                <h1>财经新闻摘要</h1>
+                <div class="summary-meta">生成时间: 2025年09月26日 20:06:57</div>
+                <div class="summary-body">
+                    这是一条测试财经新闻摘要<br><br>## 市场分析<br>近期A股市场表现强劲，主要受到政策利好推动。<br><br>### 热点行业<br>1. 科技板块：人工智能概念股持续走强<br>2. 新能源：光伏和锂电池板块表现活跃<br>3. 金融：银行股估值修复
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            // 简单的兼容性脚本
+            document.addEventListener('DOMContentLoaded', function() {
+                // 处理iOS Safari上的滚动问题
+                document.body.style.webkitOverflowScrolling = 'touch';
+            });
+        </script>
+    </body>
+    </html>
+    

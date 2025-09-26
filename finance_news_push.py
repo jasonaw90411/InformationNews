@@ -156,14 +156,8 @@ def fetch_rss_articles(rss_feeds, max_articles=5):
 # AI 生成内容摘要（基于爬取的正文）
 # 生成完整新闻摘要HTML文件
 def generate_summary_html(summary_text):
-    # 创建同层级目录用于存放HTML文件
-    html_dir = 'news_details'
-    if not os.path.exists(html_dir):
-        os.makedirs(html_dir)
-    
-    # 生成带时间戳的文件名
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    html_filename = os.path.join(html_dir, f'finance_summary_{timestamp}.html')
+    # 使用固定文件名在同层级生成HTML，便于GitHub Pages访问
+    html_filename = 'finance_summary.html'
     
     # 生成当前时间字符串（单独计算，避免f-string中的语法问题）
     current_time = datetime.now(pytz.timezone("Asia/Shanghai")).strftime("%Y年%m月%d日 %H:%M:%S")
@@ -178,31 +172,100 @@ def generate_summary_html(summary_text):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="format-detection" content="telephone=no">
+        <meta name="apple-mobile-web-app-capable" content="yes">
         <title>财经新闻摘要</title>
         <style>
+            /* 安全区域样式重置 */
+            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+            
+            /* 基础样式 */
             body {{
-                font-family: 'Microsoft YaHei', Arial, sans-serif;
-                line-height: 1.6;
+                font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+                line-height: 1.7;
                 color: #333;
+                max-width: 100%;
+                margin: 0;
+                padding: 0;
+                background-color: #f8f8f8;
+                -webkit-text-size-adjust: 100%;
+                -webkit-tap-highlight-color: transparent;
+            }}
+            
+            /* 容器样式 */
+            .container {{
                 max-width: 800px;
                 margin: 0 auto;
-                padding: 20px;
-                background-color: #f5f5f5;
+                padding: 20px 15px;
+                background-color: #fff;
+                min-height: 100vh;
             }}
-            h1, h2, h3 {{ color: #2c3e50; }}
-            .summary-content {{ background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
-            .summary-meta {{ color: #7f8c8d; font-size: 0.9em; margin-bottom: 20px; }}
+            
+            /* 标题样式 */
+            h1, h2, h3 {{
+                color: #2c3e50;
+                margin: 15px 0 10px 0;
+                line-height: 1.4;
+            }}
+            
+            h1 {{ font-size: 22px; padding-bottom: 10px; border-bottom: 1px solid #eee; }}
+            h2 {{ font-size: 20px; }}
+            h3 {{ font-size: 18px; }}
+            
+            /* 内容样式 */
+            .summary-content {{ background: white; padding: 0; }}
+            .summary-meta {{
+                color: #666;
+                font-size: 14px;
+                margin-bottom: 15px;
+                padding-bottom: 15px;
+                border-bottom: 1px solid #eee;
+            }}
+            
+            .summary-body {{
+                font-size: 16px;
+                color: #333;
+            }}
+            
+            /* 段落样式 */
+            .summary-body > div {{
+                margin-bottom: 15px;
+            }}
+            
+            /* 响应式设计 */
+            @media (max-width: 480px) {{
+                .container {{
+                    padding: 15px 12px;
+                }}
+                
+                h1 {{ font-size: 20px; }}
+                h2 {{ font-size: 18px; }}
+                h3 {{ font-size: 16px; }}
+                
+                .summary-body {{
+                    font-size: 15px;
+                }}
+            }}
         </style>
     </head>
     <body>
-        <div class="summary-content">
-            <h1>财经新闻摘要</h1>
-            <div class="summary-meta">生成时间: {current_time}</div>
-            <hr>
-            <div class="summary-body">
-                {formatted_summary}
+        <div class="container">
+            <div class="summary-content">
+                <h1>财经新闻摘要</h1>
+                <div class="summary-meta">生成时间: {current_time}</div>
+                <div class="summary-body">
+                    {formatted_summary}
+                </div>
             </div>
         </div>
+        
+        <script>
+            // 简单的兼容性脚本
+            document.addEventListener('DOMContentLoaded', function() {{
+                // 处理iOS Safari上的滚动问题
+                document.body.style.webkitOverflowScrolling = 'touch';
+            }});
+        </script>
     </body>
     </html>
     """
@@ -308,15 +371,25 @@ def send_news_to_wechat(access_token, news_content, summary_html_path):
     else:
         core_content = "内容生成失败"
 
-    # 使用生成的HTML文件作为跳转链接
-    # 注意：在实际微信环境中，需要将此路径转换为可公开访问的URL
-    # 这里使用相对路径，在本地运行的环境中可以正常访问
-    html_url = f"file://{os.path.abspath(summary_html_path)}"
+    # 使用GitHub Pages URL作为跳转链接
+    # 注意：需要替换为您实际的GitHub Pages URL
+    # 格式为: https://[username].github.io/[repository]/finance_summary.html
+    github_pages_url = "https://[username].github.io/[repository]/finance_summary.html"
+    
+    # 在GitHub Actions环境中，可以使用GITHUB_REPOSITORY环境变量来构建URL
+    github_repo = os.environ.get('GITHUB_REPOSITORY', '')
+    if github_repo:
+        # github_repo 格式通常为 "username/repository"
+        parts = github_repo.split('/')
+        if len(parts) == 2:
+            github_pages_url = f"https://{parts[0]}.github.io/{parts[1]}/finance_summary.html"
+    
+    print(f"📌 使用GitHub Pages URL: {github_pages_url}")
     
     body = {
         "touser": openId.strip(),
         "template_id": template_id.strip(),
-        "url": html_url,  # 使用摘要HTML文件作为跳转链接
+        "url": github_pages_url,  # 使用GitHub Pages URL作为跳转链接
         "data": {
             "date": {
                 "value": f"{today_str} - {time_period}推送"
