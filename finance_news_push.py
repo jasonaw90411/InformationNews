@@ -255,8 +255,7 @@ def send_news_to_wechat(access_token, news_content):
                 "value": f"{today_str} - {time_period}推送"
             },
             "content": {
-                # "value": core_content
-                "value": "测试测试测试测试测试测试测试测试测试测试"
+                "value": core_content
             },
             "remark": {
                 "value": f"{time_period}财经简报，共{len(news_content) if isinstance(news_content, str) else 0}字符"
@@ -264,14 +263,6 @@ def send_news_to_wechat(access_token, news_content):
         }
     }
     
-    # 打印body的结构用于调试
-    print(f"===== 发送消息体调试 =====")
-    print(f"字段检查 - date: {'存在' if 'date' in body['data'] else '不存在'}")
-    print(f"字段检查 - content: {'存在' if 'content' in body['data'] else '不存在'}")
-    print(f"字段检查 - remark: {'存在' if 'remark' in body['data'] else '不存在'}")
-    print(f"content.value长度: {len(body['data']['content']['value'])}")
-    print(f"content.value前50字符: {body['data']['content']['value'][:50]}...")
-    print(f"========================")
     
     url = 'https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}'.format(access_token)
     response = requests.post(url, json.dumps(body))
