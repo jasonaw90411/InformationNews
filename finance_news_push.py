@@ -199,6 +199,18 @@ def send_news_to_wechat(access_token, news_content):
     today = datetime.now(pytz.timezone("Asia/Shanghai"))
     today_str = today.strftime("%Y年%m月%d日 %H:%M")
     time_period = get_time_period()
+    
+    # 优化内容处理 - 可能过长的内容导致微信不显示
+    if isinstance(news_content, str):
+        # 检查内容是否包含过多的特殊格式或过长
+        # 尝试提取核心内容并简化
+        core_content = news_content
+        # 如果内容太长，截取一部分并添加说明
+        if len(news_content) > 2000:
+            core_content = news_content[:1500] + "\n\n...内容过长，剩余部分已省略"
+            print("⚠️ 内容过长，已截断至1500字符")
+    else:
+        core_content = "内容生成失败"
 
     body = {
         "touser": openId.strip(),
@@ -209,16 +221,27 @@ def send_news_to_wechat(access_token, news_content):
                 "value": f"{today_str} - {time_period}推送"
             },
             "content": {
-                "value": news_content[:1500] if isinstance(news_content, str) else "内容生成失败"
+                "value": core_content
             },
             "remark": {
-                "value": f"{time_period}财经简报，更多详细内容请查看公众号"
+                "value": f"{time_period}财经简报，共{len(news_content) if isinstance(news_content, str) else 0}字符"
             }
         }
     }
+    
+    # 打印body的结构用于调试
+    print(f"===== 发送消息体调试 =====")
+    print(f"字段检查 - date: {'存在' if 'date' in body['data'] else '不存在'}")
+    print(f"字段检查 - content: {'存在' if 'content' in body['data'] else '不存在'}")
+    print(f"字段检查 - remark: {'存在' if 'remark' in body['data'] else '不存在'}")
+    print(f"content.value长度: {len(body['data']['content']['value'])}")
+    print(f"content.value前50字符: {body['data']['content']['value'][:50]}...")
+    print(f"========================")
+    
     url = 'https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}'.format(access_token)
     response = requests.post(url, json.dumps(body))
-    print(response.text)
+    print(f"响应状态: {response.status_code}")
+    print(f"响应内容: {response.text}")
     return response.json()
 
 # 主函数
