@@ -811,10 +811,10 @@ def analyze_with_llm(sector_data, stock_data):
     {stock_data}
     
     ## 分析要求
-    1. 分析A股和美国近1-2日的热点板块（3个以内），包括板块表现、上涨/下跌原因、投资机会分析
+    1. 美国近1-2日的热点板块（3个以内），包括板块表现、上涨/下跌原因、投资机会分析
     2. 根据提供的股票数据，推荐5只最具投资价值的股票，每只股票需包含：
        - 基本信息（股票代码、名称、行业）
-       - **最近一日股价**（必须显示，格式：$XX.XX）
+       - **最近一日股价**（必须显示，格式：$XX.XX，**严格按照提供的current_price数值输出，不得修改**。current_price通过info.get('currentPrice', info.get('regularMarketPrice', 0))获取，确保使用此精确值）
        - 盈利状况分析
        - 技术走势分析
        - 投资理由
@@ -826,7 +826,7 @@ def analyze_with_llm(sector_data, stock_data):
     completion = openai_client.chat.completions.create(
         model=model_name,
         messages=[
-            {"role": "system", "content": "你是一位经验丰富的金融分析师，专注于股票市场和板块分析。请基于提供的数据，给出专业、客观、深入的分析和建议。特别注意，在推荐个股时必须明确显示最近一日股价信息。"},
+            {"role": "system", "content": "你是一位经验丰富的金融分析师，专注于股票市场和板块分析。请基于提供的数据，给出专业、客观、深入的分析和建议。特别注意，在推荐个股时必须明确显示最近一日股价信息，**并且严格按照提供的current_price具体数值输出，不得自行修改或估算价格**。current_price数据通过yfinance的info.get('currentPrice', info.get('regularMarketPrice', 0))获取，请确保在输出中精确使用此价格值。"},
             {"role": "user", "content": prompt.format(sector_data=sector_data, stock_data=stock_data)}
         ]
     )
