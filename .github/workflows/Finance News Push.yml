@@ -5,8 +5,8 @@ name: Finance News Push
 
 on:
   schedule:
-    # 北京时间上午8点半 (UTC前一天20点30分)
-    - cron: '30 20 * * *'
+    # 北京时间上午8点半 (对应UTC时间0点30分)
+    - cron: '30 0 * * *'
     # 北京时间下午5点 (UTC上午9点)
     - cron: '0 9 * * *'
   workflow_dispatch:
