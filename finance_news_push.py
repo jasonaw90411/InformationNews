@@ -166,8 +166,35 @@ def generate_summary_html(summary_text):
     # 获取时间戳，用于防止缓存
     timestamp = int(time.time())
     
+    # 基础Markdown转换
+    formatted_summary = summary_text
+    
+    # 转换标题
+    formatted_summary = formatted_summary.replace('\n# ', '\n<h1>')
+    formatted_summary = formatted_summary.replace('\n## ', '\n<h2>')
+    formatted_summary = formatted_summary.replace('\n### ', '\n<h3>')
+    formatted_summary = formatted_summary.replace('\n#### ', '\n<h4>')
+    
+    # 添加标题结束标签
+    import re
+    # 处理标题结束标签 - 查找标题标签并添加对应的结束标签
+    for level in range(4, 0, -1):
+        # 查找所有hX标签并添加结束标签
+        formatted_summary = re.sub(
+            r'<h{level}>(.*?)(?=\n<h|\Z)'.format(level=level), 
+            r'<h{level}>\1</h{level}>'.format(level=level), 
+            formatted_summary, 
+            flags=re.DOTALL
+        )
+    
+    # 转换粗体文本
+    formatted_summary = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', formatted_summary)
+    
+    # 转换链接
+    formatted_summary = re.sub(r'\[(.*?)\]\((.*?)\)', r'<a href="\2">\1</a>', formatted_summary)
+    
     # 转义换行符为HTML<br>标签
-    formatted_summary = summary_text.replace('\n', '<br>')
+    formatted_summary = formatted_summary.replace('\n', '<br>')
     
     # 生成HTML内容
     html_content = f"""
@@ -184,7 +211,11 @@ def generate_summary_html(summary_text):
         <title>财经新闻摘要</title>
         <style>
             /* 安全区域样式重置 */
-            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+            * {{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }}
             
             /* 基础样式 */
             body {{
@@ -209,18 +240,50 @@ def generate_summary_html(summary_text):
             }}
             
             /* 标题样式 */
-            h1, h2, h3 {{
+            h1, h2, h3, h4 {{
                 color: #2c3e50;
                 margin: 15px 0 10px 0;
                 line-height: 1.4;
             }}
             
-            h1 {{ font-size: 22px; padding-bottom: 10px; border-bottom: 1px solid #eee; }}
-            h2 {{ font-size: 20px; }}
-            h3 {{ font-size: 18px; }}
+            h1 {{
+                font-size: 22px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #eee;
+            }}
+            h2 {{
+                font-size: 20px;
+            }}
+            h3 {{
+                font-size: 18px;
+            }}
+            h4 {{
+                font-size: 16px;
+                color: #555;
+            }}
+            
+            /* 粗体样式 */
+            strong {{
+                color: #e74c3c;
+                font-weight: 600;
+            }}
+            
+            /* 链接样式 */
+            a {{
+                color: #3498db;
+                text-decoration: none;
+                border-bottom: 1px solid #3498db;
+            }}
+            
+            a:hover {{
+                text-decoration: underline;
+            }}
             
             /* 内容样式 */
-            .summary-content {{ background: white; padding: 0; }}
+            .summary-content {{
+                background: white;
+                padding: 0;
+            }}
             .summary-meta {{
                 color: #666;
                 font-size: 14px;
@@ -245,9 +308,18 @@ def generate_summary_html(summary_text):
                     padding: 15px 12px;
                 }}
                 
-                h1 {{ font-size: 20px; }}
-                h2 {{ font-size: 18px; }}
-                h3 {{ font-size: 16px; }}
+                h1 {{
+                    font-size: 20px;
+                }}
+                h2 {{
+                    font-size: 18px;
+                }}
+                h3 {{
+                    font-size: 16px;
+                }}
+                h4 {{
+                    font-size: 15px;
+                }}
                 
                 .summary-body {{
                     font-size: 15px;
