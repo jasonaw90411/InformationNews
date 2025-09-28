@@ -50,7 +50,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install openai feedparser newspaper3k pytz lxml_html_clean
     - name: Run News Report
-      run: |
+      run:
         python finance_news_push.py
       env:
         APP_ID: ${{ secrets.APP_ID }}
@@ -59,6 +59,7 @@ jobs:
         TEMPLATE_ID: ${{ secrets.TEMPLATE_ID }}
         DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         ALI_MIND_API_KEY: ${{ secrets.ALI_MIND_API_KEY }}
+        FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
         AI_SERVICE: ${{ inputs.ai_service || 'alimind' }}
     
     - name: Commit and Push HTML file

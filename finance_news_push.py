@@ -222,7 +222,7 @@ def generate_summary_html(summary_text):
         <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
         <meta http-equiv="Pragma" content="no-cache">
         <meta http-equiv="Expires" content="0">
-        <title>财经新闻摘要</title>
+        <title>财经新闻速递</title>
         <style>
             /* 安全区域样式重置 */
             * {{
@@ -344,7 +344,7 @@ def generate_summary_html(summary_text):
     <body>
         <div class="container">
             <div class="summary-content">
-                <h1>财经新闻摘要</h1>
+                <h1>财经新闻速递</h1>
                 <div class="summary-meta">生成时间: {current_time} (版本: {timestamp})</div>
                 <div class="summary-body">
                     {formatted_summary}
