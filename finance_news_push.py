@@ -445,70 +445,9 @@ def send_news_to_wechat(access_token, news_content, summary_html_path):
     # 移除响应状态打印
     return response.json()
 
-# 主函数
-def news_report():
-    # 获取当前日期和时间段
-    today = today_date()
-    time_period = get_time_period()
-    print(f"🔄 开始生成{time_period}财经新闻推送，日期: {today}")
-    
-    # 1. 获取RSS文章
-    print("🔄 正在获取RSS文章...")
-    articles_data, analysis_text = fetch_rss_articles(rss_feeds, max_articles=5)
-    print(f"✅ 文章获取完成")
-    print(f"   文章分类数量: {len(articles_data)}")
-    print(f"   文章类别: {list(articles_data.keys())}")
-    
-    # 2. 使用AI生成财经新闻摘要
-    today_str = today.strftime("%Y-%m-%d")
-    final_summary = ""
-    
-    try:
-        print("🧠 正在生成AI财经摘要...")
-        ai_summary = summarize(analysis_text)
-        print(f"✅ AI摘要生成完成，长度: {len(ai_summary)}字符")
-        final_summary = f"📅 **{today_str} 财经新闻每日速递**\n\n✍️ **今日分析总结：**\n{ai_summary}\n\n---\n\n"
-    except Exception as e:
-        print(f"❌ AI摘要生成失败: {str(e)}")
-        final_summary = f"📅 **{today_str} 财经新闻每日速递**\n\n✍️ **今日分析总结：**\nAI摘要生成失败，请查看系统日志获取详细信息\n\n---\n\n"
-
-      # 新增: 生成板块和股票分析报告
-    try:
-        print("🔄 正在生成板块和股票分析报告...")
-        stock_report = generate_stock_report()
-        if stock_report:
-            final_summary += f"## 📊 板块与股票分析\n\n{stock_report}\n\n---\n\n"
-    except Exception as e:
-        print(f"❌ 板块和股票分析生成失败: {str(e)}")
-
-    print("📝 正在组装最终消息...")
-    for category, content in articles_data.items():
-        if content.strip():
-            print(f"   添加{category}类文章，长度: {len(content)}")
-            final_summary += f"## {category}\n{content}\n\n"
-    
-    # 3. 获取access_token
-    access_token = get_access_token()
-    if not access_token:
-        print("❌ 获取access_token失败")
-        return
-    
-    # 4. 生成HTML文件，使用完整内容
-    summary_html_path = generate_summary_html(final_summary)  # 使用完整内容
-    
-    # 5. 发送消息到微信
-    response = send_news_to_wechat(access_token, final_summary, summary_html_path)
-    
-    if response.get("errcode") == 0:
-        print(f"✅ {time_period}财经新闻推送成功")
-    else:
-        print(f"❌ {time_period}财经新闻推送失败: {response}")
-
-if __name__ == '__main__':
-    news_report()
 
 
-# ========== 新增板块追踪和股票推荐功能 ==========
+# ============================================================================= 新增板块追踪和股票推荐功能 ====================================================
 
 # 获取A股板块数据
 def get_china_sectors():
@@ -745,3 +684,69 @@ def generate_stock_report():
     except Exception as e:
         print(f"生成股票报告时出错: {str(e)}")
         return f"股票报告生成失败: {str(e)}"
+
+
+
+
+# 主函数
+def news_report():
+    # 获取当前日期和时间段
+    today = today_date()
+    time_period = get_time_period()
+    print(f"🔄 开始生成{time_period}财经新闻推送，日期: {today}")
+    
+    # 1. 获取RSS文章
+    print("🔄 正在获取RSS文章...")
+    articles_data, analysis_text = fetch_rss_articles(rss_feeds, max_articles=5)
+    print(f"✅ 文章获取完成")
+    print(f"   文章分类数量: {len(articles_data)}")
+    print(f"   文章类别: {list(articles_data.keys())}")
+    
+    # 2. 使用AI生成财经新闻摘要
+    today_str = today.strftime("%Y-%m-%d")
+    final_summary = ""
+    
+    try:
+        print("🧠 正在生成AI财经摘要...")
+        ai_summary = summarize(analysis_text)
+        print(f"✅ AI摘要生成完成，长度: {len(ai_summary)}字符")
+        final_summary = f"📅 **{today_str} 财经新闻每日速递**\n\n✍️ **今日分析总结：**\n{ai_summary}\n\n---\n\n"
+    except Exception as e:
+        print(f"❌ AI摘要生成失败: {str(e)}")
+        final_summary = f"📅 **{today_str} 财经新闻每日速递**\n\n✍️ **今日分析总结：**\nAI摘要生成失败，请查看系统日志获取详细信息\n\n---\n\n"
+
+      # 新增: 生成板块和股票分析报告
+    try:
+        print("🔄 正在生成板块和股票分析报告...")
+        stock_report = generate_stock_report()
+        if stock_report:
+            final_summary += f"## 📊 板块与股票分析\n\n{stock_report}\n\n---\n\n"
+    except Exception as e:
+        print(f"❌ 板块和股票分析生成失败: {str(e)}")
+
+    print("📝 正在组装最终消息...")
+    for category, content in articles_data.items():
+        if content.strip():
+            print(f"   添加{category}类文章，长度: {len(content)}")
+            final_summary += f"## {category}\n{content}\n\n"
+    
+    # 3. 获取access_token
+    access_token = get_access_token()
+    if not access_token:
+        print("❌ 获取access_token失败")
+        return
+    
+    # 4. 生成HTML文件，使用完整内容
+    summary_html_path = generate_summary_html(final_summary)  # 使用完整内容
+    
+    # 5. 发送消息到微信
+    response = send_news_to_wechat(access_token, final_summary, summary_html_path)
+    
+    if response.get("errcode") == 0:
+        print(f"✅ {time_period}财经新闻推送成功")
+    else:
+        print(f"❌ {time_period}财经新闻推送失败: {response}")
+
+if __name__ == '__main__':
+    news_report()
+
