@@ -632,6 +632,7 @@ def filter_quality_stocks(stocks):
             metrics = stock_data['metrics'].get('metric', {})
             pe_ratio = metrics.get('peNormalizedAnnual', 0)
             profit_margin = metrics.get('profitMargin', 0)
+            current_price = metrics.get('price', 0)  # 获取当前股价
             
             # 避免负的市盈率或过高的市盈率
             if pe_ratio <= 0 or pe_ratio > 100:
@@ -652,6 +653,7 @@ def filter_quality_stocks(stocks):
                         'name': stock_data['profile'].get('name', stock),
                         'pe_ratio': pe_ratio,
                         'profit_margin': profit_margin,
+                        'current_price': current_price,  # 添加当前股价
                         'recent_performance': (close_prices[-1] - close_prices[0]) / close_prices[0] * 100
                     })
         except Exception as e:
@@ -751,6 +753,7 @@ def generate_stock_report():
         stock_data_text = "\n"
         for stock in quality_stocks:
             stock_data_text += f"## {stock['symbol']} - {stock['name']}\n"
+            stock_data_text += f"- 当前股价: ${stock['current_price']:.2f}\n"
             stock_data_text += f"- 市盈率: {stock['pe_ratio']:.2f}\n"
             stock_data_text += f"- 利润率: {stock['profit_margin']:.2f}%\n"
             stock_data_text += f"- 近5日表现: +{stock['recent_performance']:.2f}%\n\n"
