@@ -190,8 +190,8 @@ def generate_summary_html(summary_text):
     # 转换粗体文本
     formatted_summary = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', formatted_summary)
     
-    # 转换链接
-    formatted_summary = re.sub(r'\[(.*?)\]\((.*?)\)', r'<a href="\2">\1</a>', formatted_summary)
+    # 转换链接，使用更健壮的正则表达式，正确处理包含括号的URL
+    formatted_summary = re.sub(r'\[(.*?)\]\(((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)', r'<a href="\2">\1</a>', formatted_summary)
     
     # 转义换行符为HTML<br>标签
     formatted_summary = formatted_summary.replace('\n', '<br>')
