@@ -17,6 +17,19 @@ appSecret = os.environ.get("APP_SECRET")
 openId = os.environ.get("OPEN_ID")
 template_id = os.environ.get("TEMPLATE_ID")
 
+# 从环境变量获取Finnhub API Key并初始化客户端
+finnhub_api_key = os.environ.get("FINNHUB_API_KEY")
+if not finnhub_api_key:
+    print("警告: 环境变量 FINNHUB_API_KEY 未设置，股票推荐功能将不可用")
+    finnhub_client = None
+else:
+    try:
+        finnhub_client = finnhub.Client(api_key=finnhub_api_key)
+        print("✅ Finnhub客户端初始化成功")
+    except Exception as e:
+        print(f"❌ Finnhub客户端初始化失败: {str(e)}")
+        finnhub_client = None
+
 # 选择使用的AI服务 (deepseek 或 alimind)
 ai_service = os.environ.get("AI_SERVICE", "deepseek")
 
@@ -177,8 +190,7 @@ def generate_summary_html(summary_text):
     formatted_summary = formatted_summary.replace('\n### ', '\n<h3>')
     formatted_summary = formatted_summary.replace('\n#### ', '\n<h4>')
     
-    # 添加标题结束标签
-    import re
+
     # 处理标题结束标签 - 查找标题标签并添加对应的结束标签
     for level in range(4, 0, -1):
         # 查找所有hX标签并添加结束标签
