@@ -1,31 +1,21 @@
-# 安装依赖 pip3 install requests html5lib bs4 schedule
+# 安装依赖 pip3 install requests html5lib bs4 schedule yfinance
 import os
 import requests
 import json
 from openai import OpenAI
 import feedparser
 from newspaper import Article
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 import pytz
 import re
+import yfinance as yf
 
 # 从环境变量获取微信公众号配置
 appID = os.environ.get("APP_ID")
 appSecret = os.environ.get("APP_SECRET")
 openId = os.environ.get("OPEN_ID")
 template_id = os.environ.get("TEMPLATE_ID")
-
-# 从环境变量获取World Trading Data API Key
-wtd_api_key = os.environ.get("WTD_API_KEY")
-if not wtd_api_key:
-    print("警告: 环境变量 WTD_API_KEY 未设置，股票推荐功能将不可用")
-    wtd_api_key = None
-else:
-    print("✅ World Trading Data API Key已配置")
-
-# World Trading Data API基础URL
-WTD_BASE_URL = "https://api.worldtradingdata.com/api/v1"
 
 # 选择使用的AI服务 (deepseek 或 alimind)
 ai_service = os.environ.get("AI_SERVICE", "deepseek")
@@ -461,11 +451,7 @@ def send_news_to_wechat(access_token, news_content, summary_html_path):
 # 获取美股板块数据
 def get_us_sectors():
     try:
-        if not wtd_api_key:
-            raise Exception("World Trading Data API Key未配置")
-        
-        # World Trading Data API没有直接的板块表现端点
-        # 我们使用一种替代方法：获取主要ETF数据来代表不同板块的表现
+        # 使用主要ETF数据来代表不同板块的表现
         sector_etfs = {
             'Technology': 'XLK',      # 科技板块ETF
             'Financial Services': 'XLF', # 金融板块ETF
@@ -478,19 +464,31 @@ def get_us_sectors():
         
         for sector_name, etf_symbol in sector_etfs.items():
             try:
-                # 获取ETF价格数据
-                url = f"{WTD_BASE_URL}/stock?symbol={etf_symbol}&api_token={wtd_api_key}"
-                response = requests.get(url)
-                data = response.json()
+                # 使用yfinance获取ETF数据
+                ticker = yf.Ticker(etf_symbol)
                 
-                if 'data' in data and len(data['data']) > 0:
-                    # 计算简单收益率
-                    stock_data = data['data'][0]
-                    price_open = float(stock_data.get('price_open', 0))
-                    price_close = float(stock_data.get('price', 0))
+                # 获取今日数据
+                today_data = ticker.history(period="1d")
+                
+                if not today_data.empty:
+                    # 计算收益率
+                    price_open = today_data['Open'].iloc[0]
+                    price_close = today_data['Close'].iloc[0]
                     
                     if price_open > 0:
                         performance = (price_close - price_open) / price_open * 100
+                        sector_list.append({
+                            'name': sector_name,
+                            'performance': performance
+                        })
+                else:
+                    # 如果今日数据不可用，使用最近的交易数据
+                    hist_data = ticker.history(period="5d")
+                    if len(hist_data) >= 2:
+                        # 使用最后两个交易日的数据
+                        price_previous = hist_data['Close'].iloc[-2]
+                        price_current = hist_data['Close'].iloc[-1]
+                        performance = (price_current - price_previous) / price_previous * 100
                         sector_list.append({
                             'name': sector_name,
                             'performance': performance
@@ -524,70 +522,48 @@ def get_us_sectors():
 # 获取股票数据
 def get_stock_data(symbol):
     try:
-        if not wtd_api_key:
-            raise Exception("World Trading Data API Key未配置")
+        # 使用yfinance获取股票数据
+        ticker = yf.Ticker(symbol)
         
-        # 获取股票基本信息
-        url = f"{WTD_BASE_URL}/stock?symbol={symbol}&api_token={wtd_api_key}"
-        response = requests.get(url)
-        data = response.json()
-        
-        if 'data' not in data or len(data['data']) == 0:
-            raise Exception(f"未能找到股票 {symbol} 的数据")
-        
-        stock_info = data['data'][0]
-        
-        # 获取财务数据
-        financial_url = f"{WTD_BASE_URL}/company/profile?symbol={symbol}&api_token={wtd_api_key}"
-        financial_response = requests.get(financial_url)
-        financial_data = financial_response.json()
+        # 获取基本信息
+        info = ticker.info
         
         # 获取历史价格数据（最近5天）
-        now = int(time.time())
-        five_days_ago = now - 5 * 24 * 60 * 60
-        history_url = f"{WTD_BASE_URL}/history?symbol={symbol}&sort=desc&api_token={wtd_api_key}&date_from={datetime.fromtimestamp(five_days_ago).strftime('%Y-%m-%d')}&date_to={datetime.fromtimestamp(now).strftime('%Y-%m-%d')}"
-        history_response = requests.get(history_url)
-        history_data = history_response.json()
+        hist_data = ticker.history(period="5d")
         
         # 构建返回数据结构，保持与原代码兼容
         profile = {
-            'name': stock_info.get('name', symbol),
+            'name': info.get('longName', symbol),
             'symbol': symbol,
-            'currency': stock_info.get('currency', 'USD'),
-            'exchange': stock_info.get('stock_exchange_long', '')
+            'currency': info.get('currency', 'USD'),
+            'exchange': info.get('exchange', '')
         }
         
         # 构建财务指标
         metrics = {'metric': {}}
         
         # 添加基础财务指标
-        if 'pe_ratio' in stock_info:
-            metrics['metric']['peNormalizedAnnual'] = float(stock_info['pe_ratio'])
-        else:
-            metrics['metric']['peNormalizedAnnual'] = 0
+        # 市盈率
+        pe_ratio = info.get('forwardPE', info.get('trailingPE', 0))
+        metrics['metric']['peNormalizedAnnual'] = float(pe_ratio) if pe_ratio else 0
         
-        # World Trading Data可能不直接提供利润率，我们尝试从其他财务数据中计算或估算
-        # 这里使用一些替代指标
-        if 'price' in stock_info:
-            metrics['metric']['price'] = float(stock_info['price'])
+        # 当前价格
+        current_price = info.get('currentPrice', info.get('regularMarketPrice', 0))
+        metrics['metric']['price'] = float(current_price) if current_price else 0
+        
+        # 利润率
+        profit_margin = info.get('profitMargins', 0)
+        # yfinance返回的利润率通常是小数形式，乘以100转为百分比
+        metrics['metric']['profitMargin'] = float(profit_margin * 100) if profit_margin else 10.0
         
         # 处理历史价格数据，转换为与原代码兼容的格式
         candles = {'c': [], 't': []}  # 'c'为收盘价，'t'为时间戳
         
-        if 'history' in history_data:
-            # 获取最近5天的数据
-            dates = sorted(history_data['history'].keys(), reverse=True)[:5]
-            for date in dates:
-                day_data = history_data['history'][date]
-                if 'close' in day_data:
-                    candles['c'].append(float(day_data['close']))
-                    # 转换日期字符串为时间戳
-                    date_obj = datetime.strptime(date, '%Y-%m-%d')
-                    candles['t'].append(int(date_obj.timestamp()))
-        
-        # 由于World Trading Data API可能有限制，我们可能无法获取到完整的利润率数据
-        # 这里提供一个合理的默认值或使用替代指标
-        metrics['metric']['profitMargin'] = 10.0  # 默认利润率，实际应用中可以根据API返回调整
+        if not hist_data.empty:
+            for index, row in hist_data.iterrows():
+                candles['c'].append(float(row['Close']))
+                # 转换日期为时间戳
+                candles['t'].append(int(index.timestamp()))
         
         return {
             'profile': profile,
@@ -749,9 +725,6 @@ def analyze_with_llm(sector_data, stock_data):
 
 # 生成板块和股票分析报告
 def generate_stock_report():
-    if not wtd_api_key:
-        return "股票推荐功能不可用（缺少WTD_API_KEY）"
-    
     try:
         print("🔄 正在获取板块数据...")
         # 获取美股板块数据（作为参考）
