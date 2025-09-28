@@ -168,37 +168,55 @@ def generate_summary_html(summary_text):
     # 获取时间戳，用于防止缓存
     timestamp = int(time.time())
     
-    # 基础Markdown转换
-    formatted_summary = summary_text
+    # 分割内容为财经要点和板块股票分析两部分
+    # 查找板块与股票分析的分隔符
+    section_split_pos = summary_text.find("## 📊 板块与股票分析")
     
-    # 转换标题
-    formatted_summary = formatted_summary.replace('\n# ', '\n<h1>')
-    formatted_summary = formatted_summary.replace('\n## ', '\n<h2>')
-    formatted_summary = formatted_summary.replace('\n### ', '\n<h3>')
-    formatted_summary = formatted_summary.replace('\n#### ', '\n<h4>')
+    # 提取两部分内容
+    if section_split_pos != -1:
+        finance_content = summary_text[:section_split_pos]
+        stock_analysis_content = summary_text[section_split_pos:]
+    else:
+        # 如果没有找到分隔符，全部内容放入财经要点
+        finance_content = summary_text
+        stock_analysis_content = ""
     
-
-    # 处理标题结束标签 - 查找标题标签并添加对应的结束标签
-    for level in range(4, 0, -1):
-        # 查找所有hX标签并添加结束标签
-        formatted_summary = re.sub(
-            r'<h{level}>(.*?)(?=\n<h|\Z)'.format(level=level), 
-            r'<h{level}>\1</h{level}>'.format(level=level), 
-            formatted_summary, 
-            flags=re.DOTALL
-        )
+    # 转换标题函数
+    def convert_markdown_to_html(content):
+        formatted = content
+        
+        # 转换标题
+        formatted = formatted.replace('\n# ', '\n<h1>')
+        formatted = formatted.replace('\n## ', '\n<h2>')
+        formatted = formatted.replace('\n### ', '\n<h3>')
+        formatted = formatted.replace('\n#### ', '\n<h4>')
+        
+        # 处理标题结束标签
+        for level in range(4, 0, -1):
+            formatted = re.sub(
+                r'<h{level}>(.*?)(?=\n<h|\Z)'.format(level=level), 
+                r'<h{level}>\1</h{level}>'.format(level=level), 
+                formatted, 
+                flags=re.DOTALL
+            )
+        
+        # 转换粗体文本
+        formatted = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', formatted)
+        
+        # 转换链接
+        formatted = re.sub(r'\[(.*?)\]\(((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)', r'<a href="\2">\1</a>', formatted)
+        
+        # 转义换行符为HTML<br>标签
+        formatted = formatted.replace('\n', '<br>')
+        
+        return formatted
     
-    # 转换粗体文本
-    formatted_summary = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', formatted_summary)
+    # 转换两部分内容
+    finance_html = convert_markdown_to_html(finance_content)
+    stock_analysis_html = convert_markdown_to_html(stock_analysis_content)
     
-    # 转换链接，使用更健壮的正则表达式，正确处理包含括号的URL
-    formatted_summary = re.sub(r'\[(.*?)\]\(((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)', r'<a href="\2">\1</a>', formatted_summary)
-    
-    # 转义换行符为HTML<br>标签
-    formatted_summary = formatted_summary.replace('\n', '<br>')
-    
-    # 生成HTML内容
-    html_content = f"""
+    # 生成HTML内容，包含Tab切换功能
+    html_content = f'''
     <!DOCTYPE html>
     <html lang="zh-CN">
     <head>
@@ -303,6 +321,52 @@ def generate_summary_html(summary_text):
                 margin-bottom: 15px;
             }}
             
+            /* Tab样式 */
+            .tab-container {{
+                margin-top: 20px;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }}
+            
+            .tab-headers {{
+                display: flex;
+                background-color: #f8f8f8;
+                border-bottom: 1px solid #e0e0e0;
+            }}
+            
+            .tab-header {{
+                flex: 1;
+                padding: 15px 20px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-weight: 600;
+                color: #666;
+                border-bottom: 3px solid transparent;
+            }}
+            
+            .tab-header:hover {{
+                background-color: #f0f0f0;
+                color: #3498db;
+            }}
+            
+            .tab-header.active {{
+                background-color: #fff;
+                color: #3498db;
+                border-bottom-color: #3498db;
+            }}
+            
+            .tab-content {{
+                padding: 20px;
+                display: none;
+            }}
+            
+            .tab-content.active {{
+                display: block;
+            }}
+            
             /* 响应式设计 */
             @media (max-width: 480px) {{
                 .container {{
@@ -325,6 +389,15 @@ def generate_summary_html(summary_text):
                 .summary-body {{
                     font-size: 15px;
                 }}
+                
+                .tab-header {{
+                    padding: 12px 10px;
+                    font-size: 14px;
+                }}
+                
+                .tab-content {{
+                    padding: 15px 10px;
+                }}
             }}
         </style>
     </head>
@@ -333,13 +406,47 @@ def generate_summary_html(summary_text):
             <div class="summary-content">
                 <h1>财经新闻速递</h1>
                 <div class="summary-meta">生成时间: {current_time} (版本: {timestamp})</div>
-                <div class="summary-body">
-                    {formatted_summary}
+                
+                <!-- Tab容器 -->
+                <div class="tab-container">
+                    <!-- Tab头部 -->
+                    <div class="tab-headers">
+                        <div class="tab-header active" onclick="switchTab('finance')">财经要点摘要</div>
+                        <div class="tab-header" onclick="switchTab('stocks')">板块与股票分析</div>
+                    </div>
+                    
+                    <!-- Tab内容 -->
+                    <div id="finance" class="tab-content active summary-body">
+                        {finance_html}
+                    </div>
+                    <div id="stocks" class="tab-content summary-body">
+                        {stock_analysis_html}
+                    </div>
                 </div>
             </div>
         </div>
         
         <script>
+            // Tab切换功能
+            function switchTab(tabId) {{
+                // 隐藏所有内容，移除所有活动状态
+                const contents = document.querySelectorAll('.tab-content');
+                const headers = document.querySelectorAll('.tab-header');
+                
+                contents.forEach(content => content.classList.remove('active'));
+                headers.forEach(header => header.classList.remove('active'));
+                
+                // 显示选中内容，添加活动状态
+                document.getElementById(tabId).classList.add('active');
+                document.querySelector(`[onclick="switchTab('${{tabId}}')"]`).classList.add('active');
+                
+                // 滚动到顶部
+                window.scrollTo({{
+                    top: 0,
+                    behavior: 'smooth'
+                }});
+            }}
+            
             // 简单的兼容性脚本
             document.addEventListener('DOMContentLoaded', function() {{
                 // 处理iOS Safari上的滚动问题
@@ -355,7 +462,7 @@ def generate_summary_html(summary_text):
         </script>
     </body>
     </html>
-    """
+    '''
     
     # 写入文件
     with open(html_filename, 'w', encoding='utf-8') as f:
