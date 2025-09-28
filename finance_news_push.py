@@ -208,7 +208,7 @@ def generate_summary_html(summary_text):
         <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
         <meta http-equiv="Pragma" content="no-cache">
         <meta http-equiv="Expires" content="0">
-        <title>财经新闻摘要</title>
+        <title>财经新闻速递</title>
         <style>
             /* 安全区域样式重置 */
             * {{
@@ -330,7 +330,7 @@ def generate_summary_html(summary_text):
     <body>
         <div class="container">
             <div class="summary-content">
-                <h1>财经新闻摘要</h1>
+                <h1>财经新闻速递</h1>
                 <div class="summary-meta">生成时间: {current_time} (版本: {timestamp})</div>
                 <div class="summary-body">
                     {formatted_summary}
@@ -465,6 +465,10 @@ def news_report():
         print("🧠 正在生成AI财经摘要...")
         ai_summary = summarize(analysis_text)
         print(f"✅ AI摘要生成完成，长度: {len(ai_summary)}字符")
+        
+        # 移除标题中的'（2000字以内）'文本
+        ai_summary = re.sub(r'财经要点摘要\s*（2000字以内）', '财经要点摘要', ai_summary)
+        
         final_summary = f"📅 **{today_str} 财经新闻每日速递**\n\n✍️ **今日分析总结：**\n{ai_summary}\n\n---\n\n"
     except Exception as e:
         print(f"❌ AI摘要生成失败: {str(e)}")
