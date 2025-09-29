@@ -626,6 +626,7 @@ def get_top_us_sectors():
         
         if top_3_sectors:
             print(f"✅ 成功获取并筛选出前三涨幅板块")
+            print(f"📊 前三涨幅板块详情: {top_3_sectors}")  # 调试输出
             return top_3_sectors
         else:
             raise Exception("无法筛选出前三涨幅板块")
@@ -700,16 +701,39 @@ def get_stock_data(symbol):
 def filter_popular_stocks(sector_trends):
     # 基于板块趋势和热点，选择一些可能的热门股票
     popular_stocks = {
-        # 科技板块
-        'Technology': ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA'],
-        # 金融板块
-        'Financial Services': ['JPM', 'BAC', 'GS', 'MS', 'C'],
-        # 医疗板块
-        'Healthcare': ['JNJ', 'UNH', 'PFE', 'ABBV', 'TMO'],
-        # 消费板块
-        'Consumer Cyclical': ['NKE', 'DIS', 'HD', 'MCD'],
-        # 工业板块
-        'Industrials': ['BA', 'UNP', 'HON', 'CAT', 'UPS']
+    # 科技板块
+    'Technology': [
+        # 大型科技巨头
+        'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA',
+        # 人工智能与机器学习
+        'NVDA', 'PLTR', 'CRWD', 'SNPS', 'CDNS', 'AI', 
+        # 半导体与芯片
+        'INTC', 'AMD', 'QCOM', 'ASML', 'AVGO', 'TXN',
+        # 软件与云计算
+        'ADBE', 'CRM', 'ORCL', 'SAP', 'IBM', 'SNPS',
+        # 新兴科技
+        'MNDY', 'DDOG', 'ESTC', 'PANW'
+    ],
+    # 金融板块
+    'Financial Services': ['JPM', 'BAC', 'GS', 'MS', 'C', 'WFC', 'USB', 'BLK'],
+    # 医疗板块
+    'Healthcare': ['JNJ', 'UNH', 'PFE', 'ABBV', 'TMO', 'MRK', 'LLY', 'PDD'],
+    # 可选消费板块
+    'Consumer Cyclical': ['NKE', 'DIS', 'HD', 'MCD', 'SBUX', 'TGT', 'AMZN', 'BKNG'],
+    # 工业板块
+    'Industrials': ['BA', 'UNP', 'HON', 'CAT', 'UPS', 'LMT', 'RTX', 'DE'],
+    # 能源板块
+    'Energy': ['XOM', 'CVX', 'COP', 'SLB', 'EOG', 'PXD', 'MPC', 'VLO'],
+    # 公用事业板块
+    'Utilities': ['NEE', 'DUK', 'SO', 'EXC', 'D', 'AEP', 'XEL', 'WEC'],
+    # 房地产板块
+    'Real Estate': ['AMT', 'DLR', 'PLD', 'CCI', 'SPG', 'EQIX', 'PSA', 'O'],
+    # 必需消费板块
+    'Consumer Defensive': ['XLP', 'PG', 'KO', 'PEP', 'WMT', 'COST', 'CL', 'MO'],
+    # 材料板块
+    'Materials': ['LIN', 'SHW', 'APD', 'DD', 'PPG', 'FCX', 'NEM', 'IFF'],
+    # 通信板块
+    'Communication': ['T', 'VZ', 'CMCSA', 'DIS', 'CHTR', 'NFLX', 'GOOG', 'META']
     }
     
     # 根据板块趋势选择股票
