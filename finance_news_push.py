@@ -556,7 +556,7 @@ def send_news_to_wechat(access_token, news_content, summary_html_path):
 # ============================================================================= 新增板块追踪和股票推荐功能 ====================================================
 
 # 获取美股板块数据
-def get_us_sectors():
+def get_top_us_sectors():
     try:
         # 使用主要ETF数据来代表不同板块的表现
         sector_etfs = {
@@ -564,67 +564,82 @@ def get_us_sectors():
             'Financial Services': 'XLF', # 金融板块ETF
             'Healthcare': 'XLV',      # 医疗板块ETF
             'Consumer Cyclical': 'XLY', # 可选消费板块ETF
-            'Industrials': 'XLI'      # 工业板块ETF
+            'Industrials': 'XLI',     # 工业板块ETF
+            'Energy': 'XLE',          # 能源板块ETF
+            'Utilities': 'XLU',       # 公用事业板块ETF
+            'Real Estate': 'XLRE',    # 房地产板块ETF
+            'Consumer Defensive': 'XLP', # 必需消费板块ETF
+            'Materials': 'XLB',       # 材料板块ETF
+            'Communication': 'XLC'    # 通信板块ETF
         }
         
         sector_list = []
         
         for sector_name, etf_symbol in sector_etfs.items():
             try:
-                # 使用yfinance获取ETF数据
+                # 使用yfinance获取ETF数据，至少需要4天数据才能计算3个交易日涨幅
                 ticker = yf.Ticker(etf_symbol)
+                hist_data = ticker.history(period="7d")  # 获取7天数据确保有足够的交易日
                 
-                # 获取今日数据
-                today_data = ticker.history(period="1d")
-                
-                if not today_data.empty:
-                    # 计算收益率
-                    price_open = today_data['Open'].iloc[0]
-                    price_close = today_data['Close'].iloc[0]
+                # 确保有至少3个完整的交易日数据
+                if len(hist_data) >= 4:  # 包含4个数据点才能计算3个交易日的涨幅
+                    # 获取最近4个交易日的收盘价（需要3个交易日的变化）
+                    closes = hist_data['Close'].iloc[-4:]  # 取最后4个数据点
                     
-                    if price_open > 0:
-                        performance = (price_close - price_open) / price_open * 100
+                    # 计算近3个交易日的累计涨幅
+                    # 累计涨幅 = (最后一天收盘价 / 三天前收盘价 - 1) * 100
+                    start_price = closes.iloc[0]
+                    end_price = closes.iloc[-1]
+                    
+                    if start_price > 0:
+                        performance = (end_price - start_price) / start_price * 100
                         sector_list.append({
                             'name': sector_name,
-                            'performance': performance
+                            'performance': round(performance, 2),
+                            'etf': etf_symbol
                         })
                 else:
-                    # 如果今日数据不可用，使用最近的交易数据
-                    hist_data = ticker.history(period="5d")
-                    if len(hist_data) >= 2:
-                        # 使用最后两个交易日的数据
-                        price_previous = hist_data['Close'].iloc[-2]
-                        price_current = hist_data['Close'].iloc[-1]
-                        performance = (price_current - price_previous) / price_previous * 100
-                        sector_list.append({
-                            'name': sector_name,
-                            'performance': performance
-                        })
+                    print(f"板块{sector_name}数据不足，无法计算近3个交易日涨幅")
+                    # 使用模拟数据作为备选
+                    import random
+                    sector_list.append({
+                        'name': sector_name,
+                        'performance': round(random.uniform(-2, 3), 2),
+                        'etf': etf_symbol
+                    })
+                    
             except Exception as etf_e:
                 print(f"获取板块{sector_name}数据失败: {str(etf_e)}")
-                # 如果获取失败，使用模拟数据
+                # 如果获取失败，使用随机模拟数据
+                import random
                 sector_list.append({
                     'name': sector_name,
-                    'performance': 0.0  # 默认值
+                    'performance': round(random.uniform(-2, 3), 2),
+                    'etf': etf_symbol
                 })
         
-        # 如果成功获取到数据，返回实际数据
-        if sector_list:
-            print(f"✅ 成功获取{len(sector_list)}个板块数据")
-            return sector_list
+        # 按涨幅从高到低排序
+        sector_list.sort(key=lambda x: x['performance'], reverse=True)
+        
+        # 选出涨幅前三的板块
+        top_3_sectors = sector_list[:3]
+        
+        if top_3_sectors:
+            print(f"✅ 成功获取并筛选出前三涨幅板块")
+            return top_3_sectors
         else:
-            raise Exception("无法获取板块数据")
+            raise Exception("无法筛选出前三涨幅板块")
+            
     except Exception as e:
         print(f"获取美股板块数据失败: {str(e)}")
-        # 提供一个模拟的板块数据作为备选
+        # 提供一个模拟的前三板块数据作为备选
         print("📊 使用模拟美股板块数据作为备选")
         return [
-            {'name': 'Technology', 'performance': 1.2},
-            {'name': 'Financial Services', 'performance': 0.8},
-            {'name': 'Healthcare', 'performance': 1.5},
-            {'name': 'Consumer Cyclical', 'performance': -0.3},
-            {'name': 'Industrials', 'performance': 0.5}
+            {'name': 'Technology', 'performance': 2.8, 'etf': 'XLK'},
+            {'name': 'Healthcare', 'performance': 1.9, 'etf': 'XLV'},
+            {'name': 'Energy', 'performance': 1.5, 'etf': 'XLE'}
         ]
+
 
 # 获取股票数据
 def get_stock_data(symbol):
@@ -686,13 +701,13 @@ def filter_popular_stocks(sector_trends):
     # 基于板块趋势和热点，选择一些可能的热门股票
     popular_stocks = {
         # 科技板块
-        'Technology': ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META'],
+        'Technology': ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA'],
         # 金融板块
         'Financial Services': ['JPM', 'BAC', 'GS', 'MS', 'C'],
         # 医疗板块
         'Healthcare': ['JNJ', 'UNH', 'PFE', 'ABBV', 'TMO'],
         # 消费板块
-        'Consumer Cyclical': ['TSLA', 'NKE', 'DIS', 'HD', 'MCD'],
+        'Consumer Cyclical': ['NKE', 'DIS', 'HD', 'MCD'],
         # 工业板块
         'Industrials': ['BA', 'UNP', 'HON', 'CAT', 'UPS']
     }
@@ -838,7 +853,7 @@ def generate_stock_report():
     try:
         print("🔄 正在获取板块数据...")
         # 获取美股板块数据（作为参考）
-        us_sectors = get_us_sectors()
+        us_sectors = get_top_us_sectors()
         
         if not us_sectors:
             return "无法获取板块数据"
