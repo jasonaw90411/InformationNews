@@ -182,6 +182,30 @@ def generate_summary_html(summary_text):
         finance_content = summary_text
         stock_analysis_content = ""
     
+    # 进一步从板块分析内容中分离出三个市场的内容
+    us_stock_content = ""
+    cn_stock_content = ""
+    hk_stock_content = ""
+    
+    # 查找各个市场的分隔符
+    us_split_pos = stock_analysis_content.find("## 📊 美股板块与股票分析")
+    cn_split_pos = stock_analysis_content.find("## 📊 A股板块与股票分析")
+    hk_split_pos = stock_analysis_content.find("## 📊 港股板块与股票分析")
+    
+    # 提取各个市场的内容
+    if us_split_pos != -1:
+        # 美股内容的结束位置
+        us_end_pos = cn_split_pos if cn_split_pos != -1 else (hk_split_pos if hk_split_pos != -1 else len(stock_analysis_content))
+        us_stock_content = stock_analysis_content[us_split_pos:us_end_pos]
+    
+    if cn_split_pos != -1:
+        # A股内容的结束位置
+        cn_end_pos = hk_split_pos if hk_split_pos != -1 else len(stock_analysis_content)
+        cn_stock_content = stock_analysis_content[cn_split_pos:cn_end_pos]
+    
+    if hk_split_pos != -1:
+        hk_stock_content = stock_analysis_content[hk_split_pos:]
+    
     # 转换标题函数
     def convert_markdown_to_html(content):
         formatted = content
@@ -212,9 +236,11 @@ def generate_summary_html(summary_text):
         
         return formatted
     
-    # 转换两部分内容
+    # 转换各部分内容
     finance_html = convert_markdown_to_html(finance_content)
-    stock_analysis_html = convert_markdown_to_html(stock_analysis_content)
+    us_stock_html = convert_markdown_to_html(us_stock_content)
+    cn_stock_html = convert_markdown_to_html(cn_stock_content)
+    hk_stock_html = convert_markdown_to_html(hk_stock_html)
     
     # 生成HTML内容，包含Tab切换功能
     html_content = f'''
@@ -368,6 +394,52 @@ def generate_summary_html(summary_text):
                 display: block;
             }}
             
+            /* 子Tab样式 */
+            .sub-tab-container {{
+                margin-top: 15px;
+                border: 1px solid #e0e0e0;
+                border-radius: 6px;
+                overflow: hidden;
+            }}
+            
+            .sub-tab-headers {{
+                display: flex;
+                background-color: #f9f9f9;
+                border-bottom: 1px solid #e0e0e0;
+            }}
+            
+            .sub-tab-header {{
+                flex: 1;
+                padding: 10px 15px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-weight: 500;
+                color: #666;
+                font-size: 14px;
+                border-bottom: 2px solid transparent;
+            }}
+            
+            .sub-tab-header:hover {{
+                background-color: #f0f0f0;
+                color: #3498db;
+            }}
+            
+            .sub-tab-header.active {{
+                background-color: #fff;
+                color: #3498db;
+                border-bottom-color: #3498db;
+            }}
+            
+            .sub-tab-content {{
+                padding: 15px;
+                display: none;
+            }}
+            
+            .sub-tab-content.active {{
+                display: block;
+            }}
+            
             /* 响应式设计 */
             @media (max-width: 480px) {{
                 .container {{
@@ -399,6 +471,15 @@ def generate_summary_html(summary_text):
                 .tab-content {{
                     padding: 15px 10px;
                 }}
+                
+                .sub-tab-header {{
+                    padding: 8px 5px;
+                    font-size: 13px;
+                }}
+                
+                .sub-tab-content {{
+                    padding: 12px 8px;
+                }}
             }}
         </style>
     </head>
@@ -420,15 +501,34 @@ def generate_summary_html(summary_text):
                     <div id="finance" class="tab-content active summary-body">
                         {finance_html}
                     </div>
-                    <div id="stocks" class="tab-content summary-body">
-                        {stock_analysis_html}
+                    <div id="stocks" class="tab-content">
+                        <!-- 股票分析的子Tab容器 -->
+                        <div class="sub-tab-container">
+                            <!-- 子Tab头部 -->
+                            <div class="sub-tab-headers">
+                                <div class="sub-tab-header active" onclick="switchSubTab('us_stocks')">美股</div>
+                                <div class="sub-tab-header" onclick="switchSubTab('cn_stocks')">A股</div>
+                                <div class="sub-tab-header" onclick="switchSubTab('hk_stocks')">港股</div>
+                            </div>
+                            
+                            <!-- 子Tab内容 -->
+                            <div id="us_stocks" class="sub-tab-content active summary-body">
+                                {us_stock_html}
+                            </div>
+                            <div id="cn_stocks" class="sub-tab-content summary-body">
+                                {cn_stock_html}
+                            </div>
+                            <div id="hk_stocks" class="sub-tab-content summary-body">
+                                {hk_stock_html}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         
         <script>
-            // Tab切换功能
+            // 主Tab切换功能
             function switchTab(tabId) {{
                 // 隐藏所有内容，移除所有活动状态
                 const contents = document.querySelectorAll('.tab-content');
@@ -448,6 +548,26 @@ def generate_summary_html(summary_text):
                 }});
             }}
             
+            // 子Tab切换功能
+            function switchSubTab(tabId) {{
+                // 隐藏所有子内容，移除所有子活动状态
+                const contents = document.querySelectorAll('.sub-tab-content');
+                const headers = document.querySelectorAll('.sub-tab-header');
+                
+                contents.forEach(content => content.classList.remove('active'));
+                headers.forEach(header => header.classList.remove('active'));
+                
+                // 显示选中内容，添加活动状态
+                document.getElementById(tabId).classList.add('active');
+                document.querySelector(`[onclick="switchSubTab('${{tabId}}')"]`).classList.add('active');
+                
+                // 滚动到顶部
+                window.scrollTo({{
+                    top: 0,
+                    behavior: 'smooth'
+                }});
+            }}
+            
             // 简单的兼容性脚本
             document.addEventListener('DOMContentLoaded', function() {{
                 // 处理iOS Safari上的滚动问题
@@ -458,7 +578,7 @@ def generate_summary_html(summary_text):
                     if (event.persisted) {{
                         window.location.reload();
                     }}
-                }};
+                }});
             }});
         </script>
     </body>
