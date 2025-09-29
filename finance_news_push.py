@@ -239,7 +239,7 @@ def generate_summary_html(summary_text):
     hk_stock_html = convert_markdown_to_html(hk_stock_content)
     
     # 使用字符串拼接和转义大括号的方式生成HTML
-    html_start = """
+    html_start = '''
     <!DOCTYPE html>
     <html lang="zh-CN">
     <head>
@@ -253,14 +253,14 @@ def generate_summary_html(summary_text):
         <title>财经新闻速递</title>
         <style>
             /* 安全区域样式重置 */
-            * {
+            * {{
                 margin: 0;
                 padding: 0;
                 box-sizing: border-box;
-            }
+            }}
             
             /* 基础样式 */
-            body {
+            body {{
                 font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
                 line-height: 1.7;
                 color: #333;
@@ -270,96 +270,96 @@ def generate_summary_html(summary_text):
                 background-color: #f8f8f8;
                 -webkit-text-size-adjust: 100%;
                 -webkit-tap-highlight-color: transparent;
-            }
+            }}
             
             /* 容器样式 */
-            .container {
+            .container {{
                 max-width: 800px;
                 margin: 0 auto;
                 padding: 20px 15px;
                 background-color: #fff;
                 min-height: 100vh;
-            }
+            }}
             
             /* 标题样式 */
-            h1, h2, h3, h4 {
+            h1, h2, h3, h4 {{
                 color: #2c3e50;
                 margin: 15px 0 10px 0;
                 line-height: 1.4;
-            }
+            }}
             
-            h1 {
+            h1 {{
                 font-size: 22px;
                 padding-bottom: 10px;
                 border-bottom: 1px solid #eee;
-            }
-            h2 {
+            }}
+            h2 {{
                 font-size: 20px;
-            }
-            h3 {
+            }}
+            h3 {{
                 font-size: 18px;
-            }
-            h4 {
+            }}
+            h4 {{
                 font-size: 16px;
                 color: #555;
-            }
+            }}
             
             /* 粗体样式 */
-            strong {
+            strong {{
                 color: #e74c3c;
                 font-weight: 600;
-            }
+            }}
             
             /* 链接样式 */
-            a {
+            a {{
                 color: #3498db;
                 text-decoration: none;
                 border-bottom: 1px solid #3498db;
-            }
+            }}
             
-            a:hover {
+            a:hover {{
                 text-decoration: underline;
-            }
+            }}
             
             /* 内容样式 */
-            .summary-content {
+            .summary-content {{
                 background: white;
                 padding: 0;
-            }
-            .summary-meta {
+            }}
+            .summary-meta {{
                 color: #666;
                 font-size: 14px;
                 margin-bottom: 15px;
                 padding-bottom: 15px;
                 border-bottom: 1px solid #eee;
-            }
+            }}
             
-            .summary-body {
+            .summary-body {{
                 font-size: 16px;
                 color: #333;
-            }
+            }}
             
             /* 段落样式 */
-            .summary-body > div {
+            .summary-body > div {{
                 margin-bottom: 15px;
-            }
+            }}
             
             /* Tab样式 */
-            .tab-container {
+            .tab-container {{
                 margin-top: 20px;
                 border: 1px solid #e0e0e0;
                 border-radius: 8px;
                 overflow: hidden;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            }
+            }}
             
-            .tab-headers {
+            .tab-headers {{
                 display: flex;
                 background-color: #f8f8f8;
                 border-bottom: 1px solid #e0e0e0;
-            }
+            }}
             
-            .tab-header {
+            .tab-header {{
                 flex: 1;
                 padding: 15px 20px;
                 text-align: center;
@@ -368,43 +368,43 @@ def generate_summary_html(summary_text):
                 font-weight: 600;
                 color: #666;
                 border-bottom: 3px solid transparent;
-            }
+            }}
             
-            .tab-header:hover {
+            .tab-header:hover {{
                 background-color: #f0f0f0;
                 color: #3498db;
-            }
+            }}
             
-            .tab-header.active {
+            .tab-header.active {{
                 background-color: #fff;
                 color: #3498db;
                 border-bottom-color: #3498db;
-            }
+            }}
             
-            .tab-content {
+            .tab-content {{
                 padding: 20px;
                 display: none;
-            }
+            }}
             
-            .tab-content.active {
+            .tab-content.active {{
                 display: block;
-            }
+            }}
             
             /* 子Tab样式 */
-            .sub-tab-container {
+            .sub-tab-container {{
                 margin-top: 15px;
                 border: 1px solid #e0e0e0;
                 border-radius: 6px;
                 overflow: hidden;
-            }
+            }}
             
-            .sub-tab-headers {
+            .sub-tab-headers {{
                 display: flex;
                 background-color: #f9f9f9;
                 border-bottom: 1px solid #e0e0e0;
-            }
+            }}
             
-            .sub-tab-header {
+            .sub-tab-header {{
                 flex: 1;
                 padding: 10px 15px;
                 text-align: center;
@@ -414,76 +414,76 @@ def generate_summary_html(summary_text):
                 color: #666;
                 font-size: 14px;
                 border-bottom: 2px solid transparent;
-            }
+            }}
             
-            .sub-tab-header:hover {
+            .sub-tab-header:hover {{
                 background-color: #f0f0f0;
                 color: #3498db;
-            }
+            }}
             
-            .sub-tab-header.active {
+            .sub-tab-header.active {{
                 background-color: #fff;
                 color: #3498db;
                 border-bottom-color: #3498db;
-            }
+            }}
             
-            .sub-tab-content {
+            .sub-tab-content {{
                 padding: 15px;
                 display: none;
-            }
+            }}
             
-            .sub-tab-content.active {
+            .sub-tab-content.active {{
                 display: block;
-            }
+            }}
             
             /* 响应式设计 */
-            @media (max-width: 480px) {
-                .container {
+            @media (max-width: 480px) {{
+                .container {{
                     padding: 15px 12px;
-                }
+                }}
                 
-                h1 {
+                h1 {{
                     font-size: 20px;
-                }
-                h2 {
+                }}
+                h2 {{
                     font-size: 18px;
-                }
-                h3 {
+                }}
+                h3 {{
                     font-size: 16px;
-                }
-                h4 {
+                }}
+                h4 {{
                     font-size: 15px;
-                }
+                }}
                 
-                .summary-body {
+                .summary-body {{
                     font-size: 15px;
-                }
+                }}
                 
-                .tab-header {
+                .tab-header {{
                     padding: 12px 10px;
                     font-size: 14px;
-                }
+                }}
                 
-                .tab-content {
+                .tab-content {{
                     padding: 15px 10px;
-                }
+                }}
                 
-                .sub-tab-header {
+                .sub-tab-header {{
                     padding: 8px 5px;
                     font-size: 13px;
-                }
+                }}
                 
-                .sub-tab-content {
+                .sub-tab-content {{
                     padding: 12px 8px;
-                }
-            }
+                }}
+            }}
         </style>
     </head>
     <body>
         <div class="container">
             <div class="summary-content">
                 <h1>财经新闻速递</h1>
-                <div class="summary-meta">生成时间: {current_time} (版本: {timestamp})</div>
+                <div class="summary-meta">生成时间: {{current_time}} (版本: {{timestamp}})</div>
                 
                 <!-- Tab容器 -->
                 <div class="tab-container">
@@ -495,7 +495,7 @@ def generate_summary_html(summary_text):
                     
                     <!-- Tab内容 -->
                     <div id="finance" class="tab-content active summary-body">
-                        {finance_html}
+                        {{finance_html}}
                     </div>
                     <div id="stocks" class="tab-content">
                         <!-- 股票分析的子Tab容器 -->
@@ -509,13 +509,13 @@ def generate_summary_html(summary_text):
                             
                             <!-- 子Tab内容 -->
                             <div id="us_stocks" class="sub-tab-content active summary-body">
-                                {us_stock_html}
+                                {{us_stock_html}}
                             </div>
                             <div id="cn_stocks" class="sub-tab-content summary-body">
-                                {cn_stock_html}
+                                {{cn_stock_html}}
                             </div>
                             <div id="hk_stocks" class="sub-tab-content summary-body">
-                                {hk_stock_html}
+                                {{hk_stock_html}}
                             </div>
                         </div>
                     </div>
@@ -588,13 +588,13 @@ def generate_summary_html(summary_text):
                     if (event.persisted) {
                         window.location.reload();
                     }
-                }});
+                };
             });
         </script>
     </body>
     </html>
-    """
-        
+    '''
+    
     # 使用安全的格式化方式
     try:
         # 使用字典参数进行格式化，避免位置参数可能导致的问题
@@ -609,12 +609,12 @@ def generate_summary_html(summary_text):
     except KeyError as e:
         print(f"格式化HTML时出错: {e}")
         # 如果格式化失败，使用默认值
-        html_content = html_start.replace('{current_time}', current_time)
-        html_content = html_content.replace('{timestamp}', str(timestamp))
-        html_content = html_content.replace('{finance_html}', finance_html)
-        html_content = html_content.replace('{us_stock_html}', us_stock_html)
-        html_content = html_content.replace('{cn_stock_html}', cn_stock_html)
-        html_content = html_content.replace('{hk_stock_html}', hk_stock_html)
+        html_content = html_start.replace('{{current_time}}', current_time)
+        html_content = html_content.replace('{{timestamp}}', str(timestamp))
+        html_content = html_content.replace('{{finance_html}}', finance_html)
+        html_content = html_content.replace('{{us_stock_html}}', us_stock_html)
+        html_content = html_content.replace('{{cn_stock_html}}', cn_stock_html)
+        html_content = html_content.replace('{{hk_stock_html}}', hk_stock_html)
     
     # 写入文件
     with open(html_filename, 'w', encoding='utf-8') as f:
