@@ -158,92 +158,88 @@ def fetch_rss_articles(rss_feeds, max_articles=5):
     return news_data, analysis_text
 
 # AI 生成内容摘要（基于爬取的正文）
-# 生成完整新闻摘要HTML文件
+    # 生成完整新闻摘要HTML文件
 def generate_summary_html(summary_text):
-    # 使用固定文件名在同层级生成HTML，便于GitHub Pages访问
-    html_filename = 'finance_summary.html'
-    
-    # 生成当前时间字符串（单独计算，避免f-string中的语法问题）
-    current_time = datetime.now(pytz.timezone("Asia/Shanghai")).strftime("%Y年%m月%d日 %H:%M:%S")
-    
-    # 获取时间戳，用于防止缓存
-    timestamp = int(time.time())
-    
-    # 分割内容为财经要点和板块股票分析两部分
-    # 查找板块与股票分析的分隔符
-    section_split_pos = summary_text.find("## 📊 板块与股票分析")
-    
-    # 提取两部分内容
-    if section_split_pos != -1:
-        finance_content = summary_text[:section_split_pos]
-        stock_analysis_content = summary_text[section_split_pos:]
-    else:
-        # 如果没有找到分隔符，全部内容放入财经要点
-        finance_content = summary_text
-        stock_analysis_content = ""
-    
-    # 进一步从板块分析内容中分离出三个市场的内容
-    us_stock_content = ""
-    cn_stock_content = ""
-    hk_stock_content = ""
-    
-    # 查找各个市场的分隔符
-    us_split_pos = stock_analysis_content.find("## 📊 美股板块与股票分析")
-    cn_split_pos = stock_analysis_content.find("## 📊 A股板块与股票分析")
-    hk_split_pos = stock_analysis_content.find("## 📊 港股板块与股票分析")
-    
-    # 提取各个市场的内容
-    if us_split_pos != -1:
-        # 美股内容的结束位置
-        us_end_pos = cn_split_pos if cn_split_pos != -1 else (hk_split_pos if hk_split_pos != -1 else len(stock_analysis_content))
-        us_stock_content = stock_analysis_content[us_split_pos:us_end_pos]
-    
-    if cn_split_pos != -1:
-        # A股内容的结束位置
-        cn_end_pos = hk_split_pos if hk_split_pos != -1 else len(stock_analysis_content)
-        cn_stock_content = stock_analysis_content[cn_split_pos:cn_end_pos]
-    
-    if hk_split_pos != -1:
-        hk_stock_content = stock_analysis_content[hk_split_pos:]
-    
-    # 转换标题函数
-    def convert_markdown_to_html(content):
-        formatted = content
+        # 使用固定文件名在同层级生成HTML，便于GitHub Pages访问
+        html_filename = 'finance_summary.html'
         
-        # 转换标题
-        formatted = formatted.replace('\n# ', '\n<h1>')
-        formatted = formatted.replace('\n## ', '\n<h2>')
-        formatted = formatted.replace('\n### ', '\n<h3>')
-        formatted = formatted.replace('\n#### ', '\n<h4>')
+        # 生成当前时间字符串（单独计算，避免f-string中的语法问题）
+        current_time = datetime.now(pytz.timezone("Asia/Shanghai")).strftime("%Y年%m月%d日 %H:%M:%S")
         
-        # 处理标题结束标签
-        for level in range(4, 0, -1):
-            formatted = re.sub(
-                r'<h{level}>(.*?)(?=\n<h|\Z)'.format(level=level), 
-                r'<h{level}>\1</h{level}>'.format(level=level), 
-                formatted, 
-                flags=re.DOTALL
-            )
+        # 获取时间戳，用于防止缓存
+        timestamp = int(time.time())
         
-        # 转换粗体文本
-        formatted = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', formatted)
+        # 分割内容为财经要点和板块股票分析两部分
+        section_split_pos = summary_text.find("## 📊 板块与股票分析")
         
-        # 转换链接
-        formatted = re.sub(r'\[(.*?)\]\(((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)', r'<a href="\2">\1</a>', formatted)
+        # 提取两部分内容
+        if section_split_pos != -1:
+            finance_content = summary_text[:section_split_pos]
+            stock_analysis_content = summary_text[section_split_pos:]
+        else:
+            finance_content = summary_text
+            stock_analysis_content = ""
         
-        # 转义换行符为HTML<br>标签
-        formatted = formatted.replace('\n', '<br>')
+        # 进一步从板块分析内容中分离出三个市场的内容
+        us_stock_content = ""
+        cn_stock_content = ""
+        hk_stock_content = ""
         
-        return formatted
-    
-    # 转换各部分内容
-    finance_html = convert_markdown_to_html(finance_content)
-    us_stock_html = convert_markdown_to_html(us_stock_content)
-    cn_stock_html = convert_markdown_to_html(cn_stock_content)
-    hk_stock_html = convert_markdown_to_html(hk_stock_html)
-    
-    # 生成HTML内容，包含Tab切换功能
-    html_content = f'''
+        # 查找各个市场的分隔符
+        us_split_pos = stock_analysis_content.find("## 📊 美股板块与股票分析")
+        cn_split_pos = stock_analysis_content.find("## 📊 A股板块与股票分析")
+        hk_split_pos = stock_analysis_content.find("## 📊 港股板块与股票分析")
+        
+        # 提取各个市场的内容
+        if us_split_pos != -1:
+            us_end_pos = cn_split_pos if cn_split_pos != -1 else (hk_split_pos if hk_split_pos != -1 else len(stock_analysis_content))
+            us_stock_content = stock_analysis_content[us_split_pos:us_end_pos]
+        
+        if cn_split_pos != -1:
+            cn_end_pos = hk_split_pos if hk_split_pos != -1 else len(stock_analysis_content)
+            cn_stock_content = stock_analysis_content[cn_split_pos:cn_end_pos]
+        
+        if hk_split_pos != -1:
+            hk_stock_content = stock_analysis_content[hk_split_pos:]
+        
+        # 转换标题函数
+        def convert_markdown_to_html(content):
+            formatted = content
+            
+            # 转换标题
+            formatted = formatted.replace('\n# ', '\n<h1>')
+            formatted = formatted.replace('\n## ', '\n<h2>')
+            formatted = formatted.replace('\n### ', '\n<h3>')
+            formatted = formatted.replace('\n#### ', '\n<h4>')
+            
+            # 处理标题结束标签
+            for level in range(4, 0, -1):
+                formatted = re.sub(
+                    r'<h{level}>(.*?)(?=\n<h|\Z)'.format(level=level), 
+                    r'<h{level}>\1</h{level}>'.format(level=level), 
+                    formatted, 
+                    flags=re.DOTALL
+                )
+            
+            # 转换粗体文本
+            formatted = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', formatted)
+            
+            # 转换链接
+            formatted = re.sub(r'\[(.*?)\]\(((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)', r'<a href="\2">\1</a>', formatted)
+            
+            # 转义换行符为HTML<br>标签
+            formatted = formatted.replace('\n', '<br>')
+            
+            return formatted
+        
+        # 转换各部分内容
+        finance_html = convert_markdown_to_html(finance_content)
+        us_stock_html = convert_markdown_to_html(us_stock_content)
+        cn_stock_html = convert_markdown_to_html(cn_stock_content)
+        hk_stock_html = convert_markdown_to_html(hk_stock_content)
+        
+        # 使用字符串拼接和转义大括号的方式生成HTML
+        html_start = """
     <!DOCTYPE html>
     <html lang="zh-CN">
     <head>
@@ -531,41 +527,55 @@ def generate_summary_html(summary_text):
             // 主Tab切换功能
             function switchTab(tabId) {{
                 // 隐藏所有内容，移除所有活动状态
-                const contents = document.querySelectorAll('.tab-content');
-                const headers = document.querySelectorAll('.tab-header');
+                var contents = document.querySelectorAll('.tab-content');
+                var headers = document.querySelectorAll('.tab-header');
                 
-                contents.forEach(content => content.classList.remove('active'));
-                headers.forEach(header => header.classList.remove('active'));
+                for (var i = 0; i < contents.length; i++) {{
+                    contents[i].classList.remove('active');
+                }}
+                for (var i = 0; i < headers.length; i++) {{
+                    headers[i].classList.remove('active');
+                }}
                 
                 // 显示选中内容，添加活动状态
                 document.getElementById(tabId).classList.add('active');
-                document.querySelector(`[onclick="switchTab('${{tabId}}')"]`).classList.add('active');
+                var tabButtons = document.querySelectorAll('.tab-header');
+                for (var i = 0; i < tabButtons.length; i++) {{
+                    if (tabButtons[i].onclick.toString().indexOf("'" + tabId + "'") !== -1) {{
+                        tabButtons[i].classList.add('active');
+                        break;
+                    }}
+                }}
                 
                 // 滚动到顶部
-                window.scrollTo({{
-                    top: 0,
-                    behavior: 'smooth'
-                }});
+                window.scrollTo(0, 0);
             }}
             
             // 子Tab切换功能
             function switchSubTab(tabId) {{
                 // 隐藏所有子内容，移除所有子活动状态
-                const contents = document.querySelectorAll('.sub-tab-content');
-                const headers = document.querySelectorAll('.sub-tab-header');
+                var contents = document.querySelectorAll('.sub-tab-content');
+                var headers = document.querySelectorAll('.sub-tab-header');
                 
-                contents.forEach(content => content.classList.remove('active'));
-                headers.forEach(header => header.classList.remove('active'));
+                for (var i = 0; i < contents.length; i++) {{
+                    contents[i].classList.remove('active');
+                }}
+                for (var i = 0; i < headers.length; i++) {{
+                    headers[i].classList.remove('active');
+                }}
                 
                 // 显示选中内容，添加活动状态
                 document.getElementById(tabId).classList.add('active');
-                document.querySelector(`[onclick="switchSubTab('${{tabId}}')"]`).classList.add('active');
+                var tabButtons = document.querySelectorAll('.sub-tab-header');
+                for (var i = 0; i < tabButtons.length; i++) {{
+                    if (tabButtons[i].onclick.toString().indexOf("'" + tabId + "'") !== -1) {{
+                        tabButtons[i].classList.add('active');
+                        break;
+                    }}
+                }}
                 
                 // 滚动到顶部
-                window.scrollTo({{
-                    top: 0,
-                    behavior: 'smooth'
-                }});
+                window.scrollTo(0, 0);
             }}
             
             // 简单的兼容性脚本
@@ -583,14 +593,14 @@ def generate_summary_html(summary_text):
         </script>
     </body>
     </html>
-    '''
-    
-    # 写入文件
-    with open(html_filename, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-    
-    # 返回文件的相对路径
-    return html_filename
+    """.format(current_time, timestamp, finance_html, us_stock_html, cn_stock_html, hk_stock_html)
+        
+        # 写入文件
+        with open(html_filename, 'w', encoding='utf-8') as f:
+            f.write(html_start)
+        
+        # 返回文件的相对路径
+        return html_filename
 
 # AI 生成内容摘要（基于爬取的正文）
 def summarize(text):
