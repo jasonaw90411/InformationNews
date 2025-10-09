@@ -480,8 +480,8 @@ def generate_summary_html(summary_text):
                         <div class="sub-tab-container">
                             <!-- 子Tab头部 -->
                             <div class="sub-tab-headers">
-                                <div class="sub-tab-header active" onclick="switchSubTab('us_stocks')">美股板块与股票分析</div>
-                                <div class="sub-tab-header" onclick="switchSubTab('a_stocks')">A股热点板块及股票推荐</div>
+                                <div class="sub-tab-header" onclick="switchSubTab('a_stocks')">A股板块及股票分析</div>
+                                <div class="sub-tab-header active" onclick="switchSubTab('us_stocks')">美股板块与股票分析</div>                             
                             </div>
                             
                             <!-- 子Tab内容 -->
