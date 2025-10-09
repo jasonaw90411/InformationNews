@@ -232,7 +232,67 @@ def filter_popular_stocks(sector_trends):
     
     return selected_stocks
 
-# 筛选盈利状况和技术走势良好的股票
+# 筛选A股质量股票
+def filter_quality_a_stocks(stocks):
+    quality_stocks = []
+    
+    for stock_name in stocks:
+        try:
+            # 为A股股票添加交易所后缀
+            # 简单实现，实际应用中需要根据公司所属交易所添加正确的后缀
+            if stock_name in ['贵州茅台', '中国平安', '恒瑞医药', '招商银行']:
+                stock_code = stock_name + '.SS'  # 上交所股票
+            else:
+                stock_code = stock_name + '.SZ'  # 深交所股票
+            
+            # 使用get_stock_data函数获取A股数据
+            stock_data = get_stock_data(stock_code)
+            
+            if not stock_data:
+                continue
+            
+            # 检查数据是否完整
+            if not all([stock_data['profile'], stock_data['metrics'], stock_data['candles']]):
+                continue
+            
+            # 筛选条件1: 有正的盈利
+            metrics = stock_data['metrics'].get('metric', {})
+            pe_ratio = metrics.get('peNormalizedAnnual', 0)
+            profit_margin = metrics.get('profitMargin', 0)
+            current_price = metrics.get('price', 0)  # 获取当前股价
+            
+            # 避免负的市盈率或过高的市盈率
+            if pe_ratio <= 0 or pe_ratio > 200:  # 放宽上限以适应A股特点
+                continue
+            
+            # 筛选条件2: 有正的利润率
+            if profit_margin <= 0:
+                continue
+            
+            # 筛选条件3: 近5日技术走势良好（收盘价呈上升趋势）
+            candles = stock_data['candles']
+            if 'c' in candles and len(candles['c']) >= 3:
+                # 检查最近3天是否呈上升趋势
+                close_prices = candles['c']
+                if close_prices[-1] > close_prices[-2] and close_prices[-2] > close_prices[-3]:
+                    quality_stocks.append({
+                        'symbol': stock_code,
+                        'name': stock_name,
+                        'pe_ratio': pe_ratio,
+                        'profit_margin': profit_margin,
+                        'current_price': current_price,
+                        'recent_performance': (close_prices[-1] - close_prices[0]) / close_prices[0] * 100
+                    })
+        except Exception as e:
+            print(f"处理A股 {stock_name} 时出错: {str(e)}")
+            continue
+    
+    # 按近期表现排序
+    quality_stocks.sort(key=lambda x: x['recent_performance'], reverse=True)
+    
+    return quality_stocks[:8]  # 返回前8只股票
+
+# 筛选美股质量股票
 def filter_quality_stocks(stocks):
     quality_stocks = []
     
@@ -570,7 +630,7 @@ def generate_a_stock_report():
 
          # 筛选质量股票
         print("🔄 正在筛选质量股票...")
-        quality_a_stocks = filter_quality_stocks(popular_a_stocks)
+        quality_a_stocks = filter_quality_a_stocks(popular_a_stocks)
         
         # 准备分析数据
         sector_analysis = analyze_sector_trends(a_sectors)
@@ -579,10 +639,10 @@ def generate_a_stock_report():
         stock_data_text = "\n"
         for stock in quality_a_stocks:  
             stock_data_text += f"## {stock['symbol']} - {stock['name']}\n"
-            stock_data_text += f"- 当前股价: ${stock['current_price']:.2f}\n"
+            stock_data_text += f"- 当前股价: ¥{stock['current_price']:.2f}\n"
             stock_data_text += f"- 市盈率: {stock['pe_ratio']:.2f}\n"
             stock_data_text += f"- 利润率: {stock['profit_margin']:.2f}%\n"
-            stock_data_text += f"- 近5日表现: +{stock['recent_performance']:.2f}%\n\n"
+            stock_data_text += f"- 近5日表现: {stock['recent_performance']:+.2f}%\n\n"
         
         # 使用LLM进行综合分析
         print("🧠 正在生成A股分析报告...")
