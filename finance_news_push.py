@@ -169,51 +169,37 @@ def generate_summary_html(summary_text):
     # 获取时间戳，用于防止缓存
     timestamp = int(time.time())
     
-    # 分割内容为财经要点和板块股票分析两部分
-    # 查找板块与股票分析的分隔符
-    section_split_pos = summary_text.find("## 📊 板块与股票分析")
+    # 分割内容为财经要点、美股分析和A股分析三部分
+    # 查找分隔符
+    us_stock_split_pos = summary_text.find("## 📊 美股板块与股票分析")
+    a_stock_split_pos = summary_text.find("## 📈 A股热点板块及股票推荐")
     
-    # 提取两部分内容
-    if section_split_pos != -1:
-        finance_content = summary_text[:section_split_pos]
-        stock_analysis_content = summary_text[section_split_pos:]
+    # 提取三部分内容
+    if us_stock_split_pos != -1 and a_stock_split_pos != -1:
+        # 确保分隔符顺序正确
+        if us_stock_split_pos < a_stock_split_pos:
+            finance_content = summary_text[:us_stock_split_pos]
+            stock_analysis_content = summary_text[us_stock_split_pos:a_stock_split_pos]
+            a_stock_content = summary_text[a_stock_split_pos:]
+        else:
+            finance_content = summary_text[:a_stock_split_pos]
+            a_stock_content = summary_text[a_stock_split_pos:us_stock_split_pos]
+            stock_analysis_content = summary_text[us_stock_split_pos:]
+    elif us_stock_split_pos != -1:
+        # 只有美股分析
+        finance_content = summary_text[:us_stock_split_pos]
+        stock_analysis_content = summary_text[us_stock_split_pos:]
+        a_stock_content = ""
+    elif a_stock_split_pos != -1:
+        # 只有A股分析
+        finance_content = summary_text[:a_stock_split_pos]
+        stock_analysis_content = ""
+        a_stock_content = summary_text[a_stock_split_pos:]
     else:
-        # 如果没有找到分隔符，全部内容放入财经要点
+        # 没有任何分析
         finance_content = summary_text
         stock_analysis_content = ""
-    
-    # A股相关内容（初始为示例内容，后续可接入真实数据源）
-    a_stock_content = "## 📈 A股热点板块及股票推荐\n\n"\
-                    "### 市场概况\n"\
-                    "- 当前上证指数: 3,100.25 (-0.52%)\n"\
-                    "- 深证成指: 10,324.78 (+0.23%)\n"\
-                    "- 创业板指: 2,098.36 (+0.85%)\n\n"\
-                    "### 热点板块\n\n"\
-                    "#### 1. 新能源 (涨幅: +2.45%)\n"\
-                    "- **板块逻辑**: 政策支持新能源发展，行业景气度持续提升\n"\
-                    "- **龙头股**: 宁德时代(300750)、隆基绿能(601012)、比亚迪(002594)\n\n"\
-                    "#### 2. 半导体 (涨幅: +1.87%)\n"\
-                    "- **板块逻辑**: 国产替代加速，AI芯片需求增长\n"\
-                    "- **龙头股**: 中芯国际(688981)、韦尔股份(603501)、北方华创(002371)\n\n"\
-                    "#### 3. 医药生物 (涨幅: +1.23%)\n"\
-                    "- **板块逻辑**: 医疗新基建推进，创新药研发加速\n"\
-                    "- **龙头股**: 恒瑞医药(600276)、药明康德(603259)、智飞生物(300122)\n\n"\
-                    "### 股票推荐\n\n"\
-                    "#### 1. 宁德时代(300750) - 新能源龙头\n"\
-                    "- **当前股价**: ¥198.56\n"\
-                    "- **投资理由**: 全球动力电池龙头，技术领先，客户结构优质\n"\
-                    "- **风险提示**: 行业竞争加剧，原材料价格波动\n\n"\
-                    "#### 2. 中芯国际(688981) - 半导体制造\n"\
-                    "- **当前股价**: ¥52.34\n"\
-                    "- **投资理由**: 国内芯片制造龙头，受益于国产替代趋势\n"\
-                    "- **风险提示**: 国际贸易摩擦，技术升级不及预期\n\n"\
-                    "#### 3. 贵州茅台(600519) - 消费龙头\n"\
-                    "- **当前股价**: ¥1,688.99\n"\
-                    "- **投资理由**: 品牌价值高，护城河深厚，业绩稳健增长\n"\
-                    "- **风险提示**: 宏观经济波动，政策监管风险\n\n"\
-                    "### 风险提示\n"\
-                    "- 市场有风险，投资需谨慎\n"\
-                    "- 以上内容仅供参考，不构成投资建议\n"
+        a_stock_content = ""
     
     # 转换标题函数
     def convert_markdown_to_html(content):
@@ -250,7 +236,7 @@ def generate_summary_html(summary_text):
     stock_analysis_html = convert_markdown_to_html(stock_analysis_content)
     a_stock_html = convert_markdown_to_html(a_stock_content)
     
-    # 生成HTML内容，包含Tab切换功能
+    # 生成HTML内容，包含嵌套Tab切换功能
     html_content = f'''
     <!DOCTYPE html>
     <html lang="zh-CN">
@@ -402,6 +388,52 @@ def generate_summary_html(summary_text):
                 display: block;
             }}
             
+            /* 二级Tab样式 */
+            .sub-tab-container {{
+                margin-top: 20px;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                overflow: hidden;
+            }}
+            
+            .sub-tab-headers {{
+                display: flex;
+                background-color: #f8f8f8;
+                border-bottom: 1px solid #e0e0e0;
+            }}
+            
+            .sub-tab-header {{
+                flex: 1;
+                padding: 12px 15px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-weight: 500;
+                color: #666;
+                font-size: 14px;
+                border-bottom: 2px solid transparent;
+            }}
+            
+            .sub-tab-header:hover {{
+                background-color: #f0f0f0;
+                color: #3498db;
+            }}
+            
+            .sub-tab-header.active {{
+                background-color: #fff;
+                color: #3498db;
+                border-bottom-color: #3498db;
+            }}
+            
+            .sub-tab-content {{
+                padding: 15px;
+                display: none;
+            }}
+            
+            .sub-tab-content.active {{
+                display: block;
+            }}
+            
             /* 响应式设计 */
             @media (max-width: 480px) {{
                 .container {{
@@ -433,6 +465,15 @@ def generate_summary_html(summary_text):
                 .tab-content {{
                     padding: 15px 10px;
                 }}
+                
+                .sub-tab-header {{
+                    padding: 10px 8px;
+                    font-size: 13px;
+                }}
+                
+                .sub-tab-content {{
+                    padding: 12px 8px;
+                }}
             }}
         </style>
     </head>
@@ -442,33 +483,44 @@ def generate_summary_html(summary_text):
                 <h1>财经新闻速递</h1>
                 <div class="summary-meta">生成时间: {current_time} (版本: {timestamp})</div>
                 
-                <!-- Tab容器 -->
+                <!-- 一级Tab容器 -->
                 <div class="tab-container">
-                    <!-- Tab头部 -->
+                    <!-- 一级Tab头部 -->
                     <div class="tab-headers">
                         <div class="tab-header active" onclick="switchTab('finance')">财经要点摘要</div>
-                        <div class="tab-header" onclick="switchTab('stocks')">美股板块分析</div>
-                        <div class="tab-header" onclick="switchTab('a_stocks')">A股热点板块</div>
+                        <div class="tab-header" onclick="switchTab('sectors')">热点板块与股票分析</div>
                     </div>
                     
-                    <!-- Tab内容 -->
+                    <!-- 一级Tab内容 -->
                     <div id="finance" class="tab-content active summary-body">
                         {finance_html}
                     </div>
-                    <div id="stocks" class="tab-content summary-body">
-                        {stock_analysis_html}
-                    </div>
-                    <div id="a_stocks" class="tab-content summary-body">
-                        {a_stock_html}
+                    <div id="sectors" class="tab-content">
+                        <!-- 二级Tab容器 -->
+                        <div class="sub-tab-container">
+                            <!-- 二级Tab头部 -->
+                            <div class="sub-tab-headers">
+                                <div class="sub-tab-header active" onclick="switchSubTab('us_stocks')">美股板块分析</div>
+                                <div class="sub-tab-header" onclick="switchSubTab('a_stocks')">A股热点板块</div>
+                            </div>
+                            
+                            <!-- 二级Tab内容 -->
+                            <div id="us_stocks" class="sub-tab-content active summary-body">
+                                {stock_analysis_html}
+                            </div>
+                            <div id="a_stocks" class="sub-tab-content summary-body">
+                                {a_stock_html}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         
         <script>
-            // Tab切换功能
+            // 一级Tab切换功能
             function switchTab(tabId) {{
-                // 隐藏所有内容，移除所有活动状态
+                // 隐藏所有一级内容，移除所有活动状态
                 const contents = document.querySelectorAll('.tab-content');
                 const headers = document.querySelectorAll('.tab-header');
                 
@@ -478,6 +530,26 @@ def generate_summary_html(summary_text):
                 // 显示选中内容，添加活动状态
                 document.getElementById(tabId).classList.add('active');
                 document.querySelector(`[onclick="switchTab('${{tabId}}')"]`).classList.add('active');
+                
+                // 滚动到顶部
+                window.scrollTo({{
+                    top: 0,
+                    behavior: 'smooth'
+                }});
+            }}
+            
+            // 二级Tab切换功能
+            function switchSubTab(tabId) {{
+                // 隐藏所有二级内容，移除所有活动状态
+                const contents = document.querySelectorAll('.sub-tab-content');
+                const headers = document.querySelectorAll('.sub-tab-header');
+                
+                contents.forEach(content => content.classList.remove('active'));
+                headers.forEach(header => header.classList.remove('active'));
+                
+                // 显示选中内容，添加活动状态
+                document.getElementById(tabId).classList.add('active');
+                document.querySelector(`[onclick="switchSubTab('${{tabId}}')"]`).classList.add('active');
                 
                 // 滚动到顶部
                 window.scrollTo({{
@@ -496,7 +568,7 @@ def generate_summary_html(summary_text):
                     if (event.persisted) {{
                         window.location.reload();
                     }}
-                }};
+                }});
             }});
         </script>
     </body>
@@ -621,10 +693,19 @@ def news_report():
 
       # 新增: 生成板块和股票分析报告
     try:
-        print("🔄 正在生成板块和股票分析报告...")
+        print("🔄 正在生成美股板块和股票分析报告...")
         stock_report = sector_stock_analysis.generate_stock_report()
         if stock_report:
-            final_summary += f"## 📊 板块与股票分析\n\n{stock_report}\n\n---\n\n"
+            final_summary += f"## 📊 美股板块与股票分析\n\n{stock_report}\n\n---\n\n"
+    except Exception as e:
+        print(f"❌ 美股板块和股票分析生成失败: {str(e)}")
+
+      # 新增: 生成A股板块和股票分析报告
+    try:
+        print("🔄 正在生成A股板块和股票分析报告...")
+        a_stock_report = sector_stock_analysis.generate_a_stock_report()
+        if a_stock_report:
+            final_summary += f"## 📈 A股热点板块及股票推荐\n\n{a_stock_report}\n\n---\n\n"
     except Exception as e:
         print(f"❌ 板块和股票分析生成失败: {str(e)}")
 
