@@ -281,7 +281,7 @@ def filter_quality_stocks(stocks):
     # 按近期表现排序
     quality_stocks.sort(key=lambda x: x['recent_performance'], reverse=True)
     
-    return quality_stocks[:3]  # 返回前3只股票
+    return quality_stocks[:8]  # 返回前8只股票
 
 # 分析板块趋势
 def analyze_sector_trends(sectors):
@@ -296,8 +296,8 @@ def analyze_sector_trends(sectors):
         analysis_text = "# 板块趋势分析\n\n"
         analysis_text += "## 近期表现最佳的板块\n\n"
         
-        # 分析前3个表现最好的板块
-        for i, sector in enumerate(sorted_sectors[:3]):
+        # 分析前4个表现最好的板块
+        for i, sector in enumerate(sorted_sectors[:4]):
             sector_name = sector['name']
             performance = sector['performance']
             analysis_text += f"### {i+1}. {sector_name} (+{performance:.2f}%)\n\n"
@@ -322,8 +322,8 @@ def analyze_with_llm(sector_data, stock_data):
     {stock_data}
     
     ## 分析要求
-    1. 美国近1-2日的热点板块（3个以内），包括板块表现、上涨/下跌原因、投资机会分析
-    2. 根据提供的股票数据，推荐5只最具投资价值的股票，每只股票需包含：
+    1. 近1-2日的热点板块（4个以内），包括板块表现、上涨/下跌原因、投资机会分析
+    2. 根据提供的股票数据，推荐8只最具投资价值的股票，每只股票需包含：
        - 基本信息（股票代码、名称、行业）
        - **最近一日股价**
        - 盈利状况分析
@@ -558,13 +558,17 @@ def generate_a_stock_report():
         
         if not popular_a_stocks:
             return "无法筛选出符合条件的A股"
+
+         # 筛选质量股票
+        print("🔄 正在筛选质量股票...")
+        quality_a_stocks = filter_quality_stocks(popular_a_stocks)
         
         # 准备分析数据
         sector_analysis = analyze_sector_trends(a_sectors)
         
         # 准备股票数据文本
         stock_data_text = "\n"
-        for stock in popular_a_stocks[:3]:  # 选择前3只股票进行分析
+        for stock in quality_a_stocks:  # 选择前3只股票进行分析
             # 由于无法直接获取A股实时数据，这里使用模拟数据
             stock_data_text += f"## {stock}\n"
             stock_data_text += f"- 当前股价: ¥{round(random.uniform(10, 300), 2)}\n"
@@ -574,61 +578,9 @@ def generate_a_stock_report():
         
         # 使用LLM进行综合分析
         print("🧠 正在生成A股分析报告...")
-        # 修改提示词以适应A股分析
-        prompt = """
-        请基于以下板块和股票数据，提供专业的A股市场分析：
+        llm_analysis = analyze_with_llm(sector_analysis, stock_data_text)
         
-        ## 板块数据
-        {sector_data}
-        
-        ## 股票数据
-        {stock_data}
-        
-        ## 分析要求
-        1. 中国A股近1-2日的热点板块（3个以内），包括板块表现、上涨/下跌原因、投资机会分析
-        2. 根据提供的股票数据，推荐3-5只最具投资价值的A股，每只股票需包含：
-           - 基本信息（股票名称、行业）
-           - 最近一日股价
-           - 盈利状况分析
-           - 技术走势分析
-           - 投资理由
-           - 风险提示
-        3. 分析应专业、客观，适合金融专业人士阅读
-        4. 格式清晰，使用适当的标题和小标题
-        """
-        
-        completion = openai_client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": "你是一位经验丰富的金融分析师，专注于中国A股市场和板块分析。请基于提供的数据，给出专业、客观、深入的分析和建议。特别重要：在进行技术分析,当前股价,推荐个股时，所有数据都要严格以{stock_data}为基准,不能自行修改,估算或使用其他价格来源"},
-                {"role": "user", "content": prompt.format(sector_data=sector_analysis, stock_data=stock_data_text)}
-            ]
-        )
-        
-        # 添加一些固定的股票推荐格式
-        a_stock_report = completion.choices[0].message.content.strip()
-        
-        # 添加一些额外的A股推荐信息
-        for stock in popular_a_stocks[:3]:
-            if '宁德时代' in stock:
-                a_stock_report += "\n- **投资理由**: 全球动力电池龙头，技术领先，客户结构优质\n"
-                a_stock_report += "- **风险提示**: 行业竞争加剧，原材料价格波动\n\n"
-            elif '比亚迪' in stock:
-                a_stock_report += "\n- **投资理由**: 新能源汽车全产业链布局，技术创新能力强\n"
-                a_stock_report += "- **风险提示**: 汽车行业竞争激烈，销量不及预期\n\n"
-            elif '中芯国际' in stock:
-                a_stock_report += "\n- **投资理由**: 国内芯片制造龙头，受益于国产替代趋势\n"
-                a_stock_report += "- **风险提示**: 国际贸易摩擦，技术升级不及预期\n\n"
-            else:
-                a_stock_report += "\n- **投资理由**: 行业龙头地位，基本面良好，成长性强\n"
-                a_stock_report += "- **风险提示**: 市场波动风险，行业政策变化风险\n\n"
-        
-        # 添加风险提示
-        a_stock_report += "## 风险提示\n"
-        a_stock_report += "- 市场有风险，投资需谨慎\n"
-        a_stock_report += "- 以上内容仅供参考，不构成投资建议\n"
-        
-        return a_stock_report
+        return llm_analysis
     except Exception as e:
         print(f"生成A股报告时出错: {str(e)}")
         return f"A股报告生成失败: {str(e)}"
