@@ -92,14 +92,14 @@ def get_top_us_sectors():
         sector_list.sort(key=lambda x: x['performance'], reverse=True)
         
         # 选出涨幅前三的板块
-        top_3_sectors = sector_list[:3]
+        top_4_sectors = sector_list[:4]
         
-        if top_3_sectors:
-            print(f"✅ 成功获取并筛选出前三涨幅板块")
-            print(f"📊 前三涨幅板块详情: {top_3_sectors}")  # 调试输出
-            return top_3_sectors
+        if top_4_sectors:
+            print(f"✅ 成功获取并筛选出前四涨幅板块")
+            print(f"📊 前四涨幅板块详情: {top_4_sectors}")  # 调试输出
+            return top_4_sectors
         else:
-            raise Exception("无法筛选出前三涨幅板块")
+            raise Exception("无法筛选出前四涨幅板块")
             
     except Exception as e:
         print(f"获取美股板块数据失败: {str(e)}")
@@ -212,19 +212,19 @@ def filter_popular_stocks(sector_trends):
         sorted_sectors = sorted(sector_trends, key=lambda x: x['performance'], reverse=True)
         
         # 从表现最好的几个板块中选择股票
-        for sector in sorted_sectors[:3]:  # 选择表现最好的3个板块
+        for sector in sorted_sectors[:4]:  # 选择表现最好的4个板块
             sector_name = sector['name']
             if sector_name in popular_stocks:
-                # 每个板块选择几只股票
+                # 每个板块选择2只股票
                 selected_stocks.extend(popular_stocks[sector_name][:2])
     
     # 如果没有足够的股票，添加一些默认股票
-    if len(selected_stocks) < 10:
-        default_stocks = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA']
+    if len(selected_stocks) < 8:  # 调整目标数量为8
+        default_stocks = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'JPM', 'JNJ']  # 增加默认股票数量
         for stock in default_stocks:
             if stock not in selected_stocks:
                 selected_stocks.append(stock)
-            if len(selected_stocks) >= 10:
+            if len(selected_stocks) >= 8:  # 目标数量为8
                 break
     
     return selected_stocks
@@ -365,14 +365,14 @@ def get_top_a_sectors():
         sector_list.sort(key=lambda x: x['performance'], reverse=True)
         
         # 选出涨幅前三的板块
-        top_3_sectors = sector_list[:3]
+        top_4_sectors = sector_list[:4]
         
-        if top_3_sectors:
-            print(f"✅ 成功获取并筛选出A股前三涨幅板块")
-            print(f"📊 A股前三涨幅板块详情: {top_3_sectors}")  # 调试输出
-            return top_3_sectors
+        if top_4_sectors:
+            print(f"✅ 成功获取并筛选出A股前四涨幅板块")
+            print(f"📊 A股前四涨幅板块详情: {top_4_sectors}")  # 调试输出
+            return top_4_sectors
         else:
-            raise Exception("无法筛选出A股前三涨幅板块")
+            raise Exception("无法筛选出A股前四涨幅板块")
             
     except Exception as e:
         print(f"获取A股板块数据失败: {str(e)}")
@@ -477,19 +477,19 @@ def filter_popular_a_stocks(sector_trends):
         sorted_sectors = sorted(sector_trends, key=lambda x: x['performance'], reverse=True)
         
         # 从表现最好的几个板块中选择股票
-        for sector in sorted_sectors[:3]:  # 选择表现最好的3个板块
+        for sector in sorted_sectors[:4]:  # 选择表现最好的4个板块
             sector_name = sector['name']
             if sector_name in popular_stocks:
-                # 每个板块选择更多股票，从2只增加到4只
-                selected_stocks.extend(popular_stocks[sector_name][:4])
+                # 每个板块选择2只股票
+                selected_stocks.extend(popular_stocks[sector_name][:2])
     
     # 如果没有足够的股票，添加一些默认股票
-    if len(selected_stocks) < 6:
-        default_stocks = ['贵州茅台', '宁德时代', '比亚迪', '中芯国际', '招商银行', '恒瑞医药']
+    if len(selected_stocks) < 8:  # 调整目标数量为8
+        default_stocks = ['贵州茅台', '宁德时代', '比亚迪', '中芯国际', '招商银行', '恒瑞医药', '隆基绿能', '韦尔股份']  # 增加默认股票数量
         for stock in default_stocks:
             if stock not in selected_stocks:
                 selected_stocks.append(stock)
-            if len(selected_stocks) >= 6:
+            if len(selected_stocks) >= 8:  # 目标数量为8
                 break
     
     return selected_stocks
