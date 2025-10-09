@@ -169,36 +169,25 @@ def generate_summary_html(summary_text):
     # 获取时间戳，用于防止缓存
     timestamp = int(time.time())
     
-    # 分割内容为财经要点、美股分析和A股分析三部分
-    # 查找分隔符
-    us_stock_split_pos = summary_text.find("## 📊 美股板块与股票分析")
+    # 分割内容为财经要点和板块股票分析两部分
+    # 查找板块与股票分析的分隔符
+    section_split_pos = summary_text.find("## 📊 美股板块与股票分析")
     a_stock_split_pos = summary_text.find("## 📈 A股热点板块及股票推荐")
     
     # 提取三部分内容
-    if us_stock_split_pos != -1 and a_stock_split_pos != -1:
-        # 确保分隔符顺序正确
-        if us_stock_split_pos < a_stock_split_pos:
-            finance_content = summary_text[:us_stock_split_pos]
-            stock_analysis_content = summary_text[us_stock_split_pos:a_stock_split_pos]
+    if section_split_pos != -1:
+        finance_content = summary_text[:section_split_pos]
+        if a_stock_split_pos != -1:
+            us_stock_content = summary_text[section_split_pos:a_stock_split_pos]
             a_stock_content = summary_text[a_stock_split_pos:]
         else:
-            finance_content = summary_text[:a_stock_split_pos]
-            a_stock_content = summary_text[a_stock_split_pos:us_stock_split_pos]
-            stock_analysis_content = summary_text[us_stock_split_pos:]
-    elif us_stock_split_pos != -1:
-        # 只有美股分析
-        finance_content = summary_text[:us_stock_split_pos]
-        stock_analysis_content = summary_text[us_stock_split_pos:]
-        a_stock_content = ""
-    elif a_stock_split_pos != -1:
-        # 只有A股分析
-        finance_content = summary_text[:a_stock_split_pos]
-        stock_analysis_content = ""
-        a_stock_content = summary_text[a_stock_split_pos:]
+            # 如果没有A股部分，美股内容包含剩余所有
+            us_stock_content = summary_text[section_split_pos:]
+            a_stock_content = ""
     else:
-        # 没有任何分析
+        # 如果没有找到分隔符，全部内容放入财经要点
         finance_content = summary_text
-        stock_analysis_content = ""
+        us_stock_content = ""
         a_stock_content = ""
     
     # 转换标题函数
@@ -233,10 +222,10 @@ def generate_summary_html(summary_text):
     
     # 转换三部分内容
     finance_html = convert_markdown_to_html(finance_content)
-    stock_analysis_html = convert_markdown_to_html(stock_analysis_content)
+    us_stock_html = convert_markdown_to_html(us_stock_content)
     a_stock_html = convert_markdown_to_html(a_stock_content)
     
-    # 生成HTML内容，包含嵌套Tab切换功能
+    # 生成HTML内容，包含Tab切换功能
     html_content = f'''
     <!DOCTYPE html>
     <html lang="zh-CN">
@@ -388,21 +377,21 @@ def generate_summary_html(summary_text):
                 display: block;
             }}
             
-            /* 二级Tab样式 */
-            .sub-tab-container {{
-                margin-top: 20px;
-                border: 1px solid #e0e0e0;
-                border-radius: 8px;
+            /* 子Tab样式 */
+            .sub-tab-container {
+                margin-top: 15px;
+                border: 1px solid #eee;
+                border-radius: 6px;
                 overflow: hidden;
-            }}
+            }
             
-            .sub-tab-headers {{
+            .sub-tab-headers {
                 display: flex;
-                background-color: #f8f8f8;
-                border-bottom: 1px solid #e0e0e0;
-            }}
+                background-color: #fafafa;
+                border-bottom: 1px solid #eee;
+            }
             
-            .sub-tab-header {{
+            .sub-tab-header {
                 flex: 1;
                 padding: 12px 15px;
                 text-align: center;
@@ -410,29 +399,29 @@ def generate_summary_html(summary_text):
                 transition: all 0.3s ease;
                 font-weight: 500;
                 color: #666;
-                font-size: 14px;
+                font-size: 15px;
                 border-bottom: 2px solid transparent;
-            }}
+            }
             
-            .sub-tab-header:hover {{
-                background-color: #f0f0f0;
+            .sub-tab-header:hover {
+                background-color: #f5f5f5;
                 color: #3498db;
-            }}
+            }
             
-            .sub-tab-header.active {{
+            .sub-tab-header.active {
                 background-color: #fff;
                 color: #3498db;
                 border-bottom-color: #3498db;
-            }}
+            }
             
-            .sub-tab-content {{
+            .sub-tab-content {
                 padding: 15px;
                 display: none;
-            }}
+            }
             
-            .sub-tab-content.active {{
+            .sub-tab-content.active {
                 display: block;
-            }}
+            }
             
             /* 响应式设计 */
             @media (max-width: 480px) {{
@@ -465,15 +454,6 @@ def generate_summary_html(summary_text):
                 .tab-content {{
                     padding: 15px 10px;
                 }}
-                
-                .sub-tab-header {{
-                    padding: 10px 8px;
-                    font-size: 13px;
-                }}
-                
-                .sub-tab-content {{
-                    padding: 12px 8px;
-                }}
             }}
         </style>
     </head>
@@ -483,32 +463,32 @@ def generate_summary_html(summary_text):
                 <h1>财经新闻速递</h1>
                 <div class="summary-meta">生成时间: {current_time} (版本: {timestamp})</div>
                 
-                <!-- 一级Tab容器 -->
+                <!-- Tab容器 -->
                 <div class="tab-container">
-                    <!-- 一级Tab头部 -->
+                    <!-- 主Tab头部 -->
                     <div class="tab-headers">
                         <div class="tab-header active" onclick="switchTab('finance')">财经要点摘要</div>
-                        <div class="tab-header" onclick="switchTab('sectors')">热点板块与股票分析</div>
+                        <div class="tab-header" onclick="switchTab('stocks')">板块与股票分析</div>
                     </div>
                     
-                    <!-- 一级Tab内容 -->
+                    <!-- 主Tab内容 -->
                     <div id="finance" class="tab-content active summary-body">
                         {finance_html}
                     </div>
-                    <div id="sectors" class="tab-content">
-                        <!-- 二级Tab容器 -->
+                    <div id="stocks" class="tab-content summary-body">
+                        <!-- 子Tab容器 -->
                         <div class="sub-tab-container">
-                            <!-- 二级Tab头部 -->
+                            <!-- 子Tab头部 -->
                             <div class="sub-tab-headers">
-                                <div class="sub-tab-header active" onclick="switchSubTab('us_stocks')">美股板块分析</div>
-                                <div class="sub-tab-header" onclick="switchSubTab('a_stocks')">A股热点板块</div>
+                                <div class="sub-tab-header active" onclick="switchSubTab('us_stocks')">美股板块与股票分析</div>
+                                <div class="sub-tab-header" onclick="switchSubTab('a_stocks')">A股热点板块及股票推荐</div>
                             </div>
                             
-                            <!-- 二级Tab内容 -->
-                            <div id="us_stocks" class="sub-tab-content active summary-body">
-                                {stock_analysis_html}
+                            <!-- 子Tab内容 -->
+                            <div id="us_stocks" class="sub-tab-content active">
+                                {us_stock_html}
                             </div>
-                            <div id="a_stocks" class="sub-tab-content summary-body">
+                            <div id="a_stocks" class="sub-tab-content">
                                 {a_stock_html}
                             </div>
                         </div>
@@ -518,9 +498,9 @@ def generate_summary_html(summary_text):
         </div>
         
         <script>
-            // 一级Tab切换功能
+            // Tab切换功能
             function switchTab(tabId) {{
-                // 隐藏所有一级内容，移除所有活动状态
+                // 隐藏所有内容，移除所有活动状态
                 const contents = document.querySelectorAll('.tab-content');
                 const headers = document.querySelectorAll('.tab-header');
                 
@@ -538,9 +518,9 @@ def generate_summary_html(summary_text):
                 }});
             }}
             
-            // 二级Tab切换功能
+            // 子Tab切换功能
             function switchSubTab(tabId) {{
-                // 隐藏所有二级内容，移除所有活动状态
+                // 隐藏所有内容，移除所有活动状态
                 const contents = document.querySelectorAll('.sub-tab-content');
                 const headers = document.querySelectorAll('.sub-tab-header');
                 
@@ -568,7 +548,7 @@ def generate_summary_html(summary_text):
                     if (event.persisted) {{
                         window.location.reload();
                     }}
-                }});
+                }};
             }});
         </script>
     </body>
@@ -693,19 +673,10 @@ def news_report():
 
       # 新增: 生成板块和股票分析报告
     try:
-        print("🔄 正在生成美股板块和股票分析报告...")
-        stock_report = sector_stock_analysis.generate_stock_report()
+        print("🔄 正在生成板块和股票分析报告...")
+        stock_report = sector_stock_analysis.generate_complete_stock_report()
         if stock_report:
-            final_summary += f"## 📊 美股板块与股票分析\n\n{stock_report}\n\n---\n\n"
-    except Exception as e:
-        print(f"❌ 美股板块和股票分析生成失败: {str(e)}")
-
-      # 新增: 生成A股板块和股票分析报告
-    try:
-        print("🔄 正在生成A股板块和股票分析报告...")
-        a_stock_report = sector_stock_analysis.generate_a_stock_report()
-        if a_stock_report:
-            final_summary += f"## 📈 A股热点板块及股票推荐\n\n{a_stock_report}\n\n---\n\n"
+            final_summary += f"## 📊 板块与股票分析\n\n{stock_report}\n\n---\n\n"
     except Exception as e:
         print(f"❌ 板块和股票分析生成失败: {str(e)}")
 
