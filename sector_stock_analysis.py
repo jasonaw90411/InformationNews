@@ -30,6 +30,7 @@ openai_client = OpenAI(api_key=api_key, base_url=api_base_url)
 # 获取美股板块数据
 def get_top_us_sectors():
     try:
+        print("🔄 正在获取美股板块实际ETF数据...")
         # 使用主要ETF数据来代表不同板块的表现
         sector_etfs = {
             'Technology': 'XLK',      # 科技板块ETF
@@ -46,70 +47,72 @@ def get_top_us_sectors():
         }
         
         sector_list = []
+        success_count = 0
         
         for sector_name, etf_symbol in sector_etfs.items():
             try:
-                # 使用yfinance获取ETF数据，至少需要4天数据才能计算3个交易日涨幅
+                print(f"   获取 {sector_name} ({etf_symbol}) 数据...")
+                # 使用yfinance获取ETF数据
                 ticker = yf.Ticker(etf_symbol)
-                hist_data = ticker.history(period="7d")  # 获取7天数据确保有足够的交易日
+                hist_data = ticker.history(period="7d")  # 获取7天数据
                 
-                # 确保有至少3个完整的交易日数据
-                if len(hist_data) >= 4:  # 包含4个数据点才能计算3个交易日的涨幅
-                    # 获取最近4个交易日的收盘价（需要3个交易日的变化）
-                    closes = hist_data['Close'].iloc[-4:]  # 取最后4个数据点
+                # 确保有足够的数据进行计算
+                if not hist_data.empty and len(hist_data) >= 4:
+                    # 获取最近4个交易日的收盘价（计算3个交易日的变化）
+                    closes = hist_data['Close'].iloc[-4:]
                     
                     # 计算近3个交易日的累计涨幅
-                    # 累计涨幅 = (最后一天收盘价 / 三天前收盘价 - 1) * 100
                     start_price = closes.iloc[0]
                     end_price = closes.iloc[-1]
                     
                     if start_price > 0:
                         performance = (end_price - start_price) / start_price * 100
-                        sector_list.append({
+                        
+                        # 计算单日涨幅
+                        daily_change = (end_price - closes.iloc[-2]) / closes.iloc[-2] * 100
+                        
+                        sector_info = {
                             'name': sector_name,
-                            'performance': round(performance, 2),
-                            'etf': etf_symbol
-                        })
+                            'performance': round(performance, 2),  # 近3个交易日涨幅
+                            'daily_change': round(daily_change, 2),
+                            'current_price': round(end_price, 2),
+                            'etf': etf_symbol,
+                            'data_date': hist_data.index[-1].strftime('%Y-%m-%d')
+                        }
+                        sector_list.append(sector_info)
+                        success_count += 1
+                        print(f"   ✓ 成功: 3日涨幅 {performance:.2f}%, 单日涨幅 {daily_change:.2f}%")
+                    else:
+                        print(f"   ✗ 错误: 起始价格为0，无法计算涨幅")
                 else:
-                    print(f"板块{sector_name}数据不足，无法计算近3个交易日涨幅")
-                    # 使用模拟数据作为备选
-                    sector_list.append({
-                        'name': sector_name,
-                        'performance': round(random.uniform(-2, 3), 2),
-                        'etf': etf_symbol
-                    })
+                    print(f"   ✗ 错误: 未获取到有效数据或数据不足（需要至少4个交易日数据）")
+                    # 不再使用随机数据，只有获取到真实数据的板块才会被添加
                     
             except Exception as etf_e:
-                print(f"获取板块{sector_name}数据失败: {str(etf_e)}")
-                # 如果获取失败，使用随机模拟数据
-                sector_list.append({
-                    'name': sector_name,
-                    'performance': round(random.uniform(-2, 3), 2),
-                    'etf': etf_symbol
-                })
+                print(f"   ✗ 错误: 获取板块{sector_name}数据失败: {str(etf_e)}")
+                # 不再使用随机数据替代
         
         # 按涨幅从高到低排序
         sector_list.sort(key=lambda x: x['performance'], reverse=True)
+        
+        print(f"\n✅ 成功获取 {success_count}/{len(sector_etfs)} 个美股板块的数据")
         
         # 选出涨幅前三的板块
         top_4_sectors = sector_list[:4]
         
         if top_4_sectors:
-            print(f"✅ 成功获取并筛选出前四涨幅板块")
+            print(f"✅ 成功筛选出前四涨幅板块")
             print(f"📊 前四涨幅板块详情: {top_4_sectors}")  # 调试输出
             return top_4_sectors
         else:
-            raise Exception("无法筛选出前四涨幅板块")
+            # 如果没有足够的板块数据，抛出异常而不是使用模拟数据
+            raise Exception("无法筛选出前四涨幅板块，获取到的有效板块数据不足")
             
     except Exception as e:
         print(f"获取美股板块数据失败: {str(e)}")
-        # 提供一个模拟的前三板块数据作为备选
-        print("📊 使用模拟美股板块数据作为备选")
-        return [
-            {'name': 'Technology', 'performance': 2.8, 'etf': 'XLK'},
-            {'name': 'Healthcare', 'performance': 1.9, 'etf': 'XLV'},
-            {'name': 'Energy', 'performance': 1.5, 'etf': 'XLE'}
-        ]
+        # 在生产环境中，可能需要返回一个空列表或抛出异常
+        # 这里为了保持兼容性，返回空列表，但实际应用中应该处理这种情况
+        return []
 
 # 获取股票数据
 def get_stock_data(symbol):
@@ -344,45 +347,90 @@ def analyze_with_llm(sector_data, stock_data):
 # 获取A股板块数据
 def get_top_a_sectors():
     try:
-        # 使用A股主要指数或ETF数据来代表不同板块的表现
-        # 注意：A股数据可能需要特殊处理，这里使用模拟数据作为示例
-        sector_list = [
-            {'name': '新能源', 'performance': round(random.uniform(0.5, 3.5), 2), 'etf': '515030'},
-            {'name': '半导体', 'performance': round(random.uniform(0.3, 3.0), 2), 'etf': '512480'},
-            {'name': '医药生物', 'performance': round(random.uniform(0.2, 2.5), 2), 'etf': '512010'},
-            {'name': '白酒', 'performance': round(random.uniform(0.1, 2.0), 2), 'etf': '161725'},
-            {'name': '光伏', 'performance': round(random.uniform(0.4, 2.8), 2), 'etf': '515790'},
-            {'name': '人工智能', 'performance': round(random.uniform(0.6, 3.2), 2), 'etf': '515070'},
-            {'name': '券商', 'performance': round(random.uniform(-0.5, 2.0), 2), 'etf': '512880'},
-            {'name': '军工', 'performance': round(random.uniform(0.2, 2.3), 2), 'etf': '512660'},
-            {'name': '汽车', 'performance': round(random.uniform(0.3, 2.4), 2), 'etf': '516110'},
-            {'name': '银行', 'performance': round(random.uniform(-0.3, 1.5), 2), 'etf': '512800'},
-            {'name': '科技', 'performance': round(random.uniform(0.4, 3.0), 2), 'etf': '515000'},
-            {'name': '消费', 'performance': round(random.uniform(0.2, 2.5), 2), 'etf': '159928'}
-        ]
+        print("🔄 正在获取A股板块实际ETF数据...")
+        # A股主要板块及其对应的ETF代码
+        sector_etfs = {
+            '新能源': '515030.SS',      # 新能源ETF
+            '半导体': '512480.SS',      # 半导体ETF
+            '光伏': '515790.SS',        # 光伏ETF
+            '医药': '512010.SS',        # 医药ETF
+            '科技': '515000.SS',        # 科技ETF
+            '军工': '512660.SS',        # 军工ETF
+            '金融': '510230.SS',        # 金融ETF
+            '消费': '512690.SS',        # 消费ETF
+            '农业': '516550.SS',        # 农业ETF
+            '有色金属': '512400.SS',     # 有色金属ETF
+            '汽车': '516110.SS',        # 汽车ETF
+            '白酒': '512690.SS'         # 消费ETF(替代白酒)
+        }
+        
+        sector_list = []
+        success_count = 0
+        
+        for sector_name, etf_symbol in sector_etfs.items():
+            try:
+                print(f"   获取 {sector_name} ({etf_symbol}) 数据...")
+                # 使用yfinance获取ETF数据
+                ticker = yf.Ticker(etf_symbol)
+                hist_data = ticker.history(period="7d")  # 获取7天数据
+                
+                # 确保有足够的数据进行计算
+                if not hist_data.empty and len(hist_data) >= 4:
+                    # 获取最近4个交易日的收盘价（计算3个交易日的变化）
+                    closes = hist_data['Close'].iloc[-4:]
+                    
+                    # 计算近3个交易日的累计涨幅
+                    start_price = closes.iloc[0]
+                    end_price = closes.iloc[-1]
+                    
+                    if start_price > 0:
+                        performance = (end_price - start_price) / start_price * 100
+                        
+                        # 计算单日涨幅
+                        daily_change = (end_price - closes.iloc[-2]) / closes.iloc[-2] * 100
+                        
+                        sector_info = {
+                            'name': sector_name,
+                            'performance': round(performance, 2),  # 近3个交易日涨幅
+                            'daily_change': round(daily_change, 2),
+                            'current_price': round(end_price, 2),
+                            'etf': etf_symbol,
+                            'data_date': hist_data.index[-1].strftime('%Y-%m-%d')
+                        }
+                        sector_list.append(sector_info)
+                        success_count += 1
+                        print(f"   ✓ 成功: 3日涨幅 {performance:.2f}%, 单日涨幅 {daily_change:.2f}%")
+                    else:
+                        print(f"   ✗ 错误: 起始价格为0，无法计算涨幅")
+                else:
+                    print(f"   ✗ 错误: 未获取到有效数据或数据不足（需要至少4个交易日数据）")
+                    # 不再使用随机数据
+                    
+            except Exception as etf_e:
+                print(f"   ✗ 错误: 获取板块{sector_name}数据失败: {str(etf_e)}")
+                # 不再使用随机数据替代
         
         # 按涨幅从高到低排序
         sector_list.sort(key=lambda x: x['performance'], reverse=True)
+        
+        print(f"\n✅ 成功获取 {success_count}/{len(sector_etfs)} 个A股板块的数据")
         
         # 选出涨幅前三的板块
         top_4_sectors = sector_list[:4]
         
         if top_4_sectors:
-            print(f"✅ 成功获取并筛选出A股前四涨幅板块")
-            print(f"📊 A股前四涨幅板块详情: {top_4_sectors}")  # 调试输出
+            print(f"✅ 成功筛选出前四涨幅A股板块")
+            print(f"📊 前四涨幅板块详情: {top_4_sectors}")  # 调试输出
             return top_4_sectors
         else:
-            raise Exception("无法筛选出A股前四涨幅板块")
+            # 如果没有足够的板块数据，抛出异常而不是使用模拟数据
+            raise Exception("无法筛选出前四涨幅A股板块，获取到的有效板块数据不足")
             
     except Exception as e:
         print(f"获取A股板块数据失败: {str(e)}")
-        # 提供一个模拟的前三板块数据作为备选
-        print("📊 使用模拟A股板块数据作为备选")
-        return [
-            {'name': '新能源', 'performance': 2.8, 'etf': '515030'},
-            {'name': '半导体', 'performance': 2.1, 'etf': '512480'},
-            {'name': '人工智能', 'performance': 1.9, 'etf': '515070'}
-        ]
+        # 在生产环境中，可能需要返回一个空列表或抛出异常
+        # 这里为了保持兼容性，返回空列表，但实际应用中应该处理这种情况
+        return []
 
 # 筛选热门A股
 def filter_popular_a_stocks(sector_trends):
