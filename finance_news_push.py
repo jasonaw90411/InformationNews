@@ -182,6 +182,39 @@ def generate_summary_html(summary_text):
         finance_content = summary_text
         stock_analysis_content = ""
     
+    # A股相关内容（初始为示例内容，后续可接入真实数据源）
+    a_stock_content = "## 📈 A股热点板块及股票推荐\n\n"\
+                    "### 市场概况\n"\
+                    "- 当前上证指数: 3,100.25 (-0.52%)\n"\
+                    "- 深证成指: 10,324.78 (+0.23%)\n"\
+                    "- 创业板指: 2,098.36 (+0.85%)\n\n"\
+                    "### 热点板块\n\n"\
+                    "#### 1. 新能源 (涨幅: +2.45%)\n"\
+                    "- **板块逻辑**: 政策支持新能源发展，行业景气度持续提升\n"\
+                    "- **龙头股**: 宁德时代(300750)、隆基绿能(601012)、比亚迪(002594)\n\n"\
+                    "#### 2. 半导体 (涨幅: +1.87%)\n"\
+                    "- **板块逻辑**: 国产替代加速，AI芯片需求增长\n"\
+                    "- **龙头股**: 中芯国际(688981)、韦尔股份(603501)、北方华创(002371)\n\n"\
+                    "#### 3. 医药生物 (涨幅: +1.23%)\n"\
+                    "- **板块逻辑**: 医疗新基建推进，创新药研发加速\n"\
+                    "- **龙头股**: 恒瑞医药(600276)、药明康德(603259)、智飞生物(300122)\n\n"\
+                    "### 股票推荐\n\n"\
+                    "#### 1. 宁德时代(300750) - 新能源龙头\n"\
+                    "- **当前股价**: ¥198.56\n"\
+                    "- **投资理由**: 全球动力电池龙头，技术领先，客户结构优质\n"\
+                    "- **风险提示**: 行业竞争加剧，原材料价格波动\n\n"\
+                    "#### 2. 中芯国际(688981) - 半导体制造\n"\
+                    "- **当前股价**: ¥52.34\n"\
+                    "- **投资理由**: 国内芯片制造龙头，受益于国产替代趋势\n"\
+                    "- **风险提示**: 国际贸易摩擦，技术升级不及预期\n\n"\
+                    "#### 3. 贵州茅台(600519) - 消费龙头\n"\
+                    "- **当前股价**: ¥1,688.99\n"\
+                    "- **投资理由**: 品牌价值高，护城河深厚，业绩稳健增长\n"\
+                    "- **风险提示**: 宏观经济波动，政策监管风险\n\n"\
+                    "### 风险提示\n"\
+                    "- 市场有风险，投资需谨慎\n"\
+                    "- 以上内容仅供参考，不构成投资建议\n"
+    
     # 转换标题函数
     def convert_markdown_to_html(content):
         formatted = content
@@ -212,9 +245,10 @@ def generate_summary_html(summary_text):
         
         return formatted
     
-    # 转换两部分内容
+    # 转换三部分内容
     finance_html = convert_markdown_to_html(finance_content)
     stock_analysis_html = convert_markdown_to_html(stock_analysis_content)
+    a_stock_html = convert_markdown_to_html(a_stock_content)
     
     # 生成HTML内容，包含Tab切换功能
     html_content = f'''
@@ -413,7 +447,8 @@ def generate_summary_html(summary_text):
                     <!-- Tab头部 -->
                     <div class="tab-headers">
                         <div class="tab-header active" onclick="switchTab('finance')">财经要点摘要</div>
-                        <div class="tab-header" onclick="switchTab('stocks')">板块与股票分析</div>
+                        <div class="tab-header" onclick="switchTab('stocks')">美股板块分析</div>
+                        <div class="tab-header" onclick="switchTab('a_stocks')">A股热点板块</div>
                     </div>
                     
                     <!-- Tab内容 -->
@@ -422,6 +457,9 @@ def generate_summary_html(summary_text):
                     </div>
                     <div id="stocks" class="tab-content summary-body">
                         {stock_analysis_html}
+                    </div>
+                    <div id="a_stocks" class="tab-content summary-body">
+                        {a_stock_html}
                     </div>
                 </div>
             </div>
