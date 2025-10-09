@@ -577,13 +577,12 @@ def generate_a_stock_report():
         
         # 准备股票数据文本
         stock_data_text = "\n"
-        for stock in quality_a_stocks:  # 选择前3只股票进行分析
-            # 由于无法直接获取A股实时数据，这里使用模拟数据
-            stock_data_text += f"## {stock}\n"
-            stock_data_text += f"- 当前股价: ¥{round(random.uniform(10, 300), 2)}\n"
-            stock_data_text += f"- 市盈率: {round(random.uniform(15, 50), 2)}\n"
-            stock_data_text += f"- 利润率: {round(random.uniform(5, 30), 2)}%\n"
-            stock_data_text += f"- 近5日表现: +{round(random.uniform(1, 5), 2)}%\n\n"
+        for stock in quality_a_stocks:  
+            stock_data_text += f"## {stock['symbol']} - {stock['name']}\n"
+            stock_data_text += f"- 当前股价: ${stock['current_price']:.2f}\n"
+            stock_data_text += f"- 市盈率: {stock['pe_ratio']:.2f}\n"
+            stock_data_text += f"- 利润率: {stock['profit_margin']:.2f}%\n"
+            stock_data_text += f"- 近5日表现: +{stock['recent_performance']:.2f}%\n\n"
         
         # 使用LLM进行综合分析
         print("🧠 正在生成A股分析报告...")
