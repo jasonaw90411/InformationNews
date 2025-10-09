@@ -378,20 +378,20 @@ def generate_summary_html(summary_text):
             }}
             
             /* 子Tab样式 */
-            .sub-tab-container {
+            .sub-tab-container {{
                 margin-top: 15px;
                 border: 1px solid #eee;
                 border-radius: 6px;
                 overflow: hidden;
-            }
+            }}
             
-            .sub-tab-headers {
+            .sub-tab-headers {{
                 display: flex;
                 background-color: #fafafa;
                 border-bottom: 1px solid #eee;
-            }
+            }}
             
-            .sub-tab-header {
+            .sub-tab-header {{
                 flex: 1;
                 padding: 12px 15px;
                 text-align: center;
@@ -401,27 +401,27 @@ def generate_summary_html(summary_text):
                 color: #666;
                 font-size: 15px;
                 border-bottom: 2px solid transparent;
-            }
+            }}
             
-            .sub-tab-header:hover {
+            .sub-tab-header:hover {{
                 background-color: #f5f5f5;
                 color: #3498db;
-            }
+            }}
             
-            .sub-tab-header.active {
+            .sub-tab-header.active {{
                 background-color: #fff;
                 color: #3498db;
                 border-bottom-color: #3498db;
-            }
+            }}
             
-            .sub-tab-content {
+            .sub-tab-content {{
                 padding: 15px;
                 display: none;
-            }
+            }}
             
-            .sub-tab-content.active {
+            .sub-tab-content.active {{
                 display: block;
-            }
+            }}
             
             /* 响应式设计 */
             @media (max-width: 480px) {{
