@@ -62,6 +62,7 @@ jobs:
         WTD_API_KEY: ${{ secrets.WTD_API_KEY }}
         ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
         AI_SERVICE: ${{ inputs.ai_service || 'alimind' }}
+        TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
     
     - name: Commit and Push HTML file
       run: |
