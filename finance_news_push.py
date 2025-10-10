@@ -11,6 +11,7 @@ import pytz
 import re
 import yfinance as yf
 import sector_stock_analysis
+import important_events_tracking
 
 # 从环境变量获取微信公众号配置
 appID = os.environ.get("APP_ID")
@@ -169,24 +170,49 @@ def generate_summary_html(summary_text):
     # 获取时间戳，用于防止缓存
     timestamp = int(time.time())
     
-    # 分割内容为财经要点和板块股票分析两部分
-    # 查找板块与股票分析的分隔符
+    # 分割内容为财经要点、板块股票分析和重要事件三部分
+    # 查找分隔符
     section_split_pos = summary_text.find("## 📊 美股板块与股票分析")
     a_stock_split_pos = summary_text.find("## 📈 A股热点板块及股票推荐")
+    events_split_pos = summary_text.find("## 📅 重要事件与社媒追踪")
     
-    # 提取三部分内容
+    # 提取各部分内容
     if section_split_pos != -1:
         finance_content = summary_text[:section_split_pos]
-        if a_stock_split_pos != -1:
-            us_stock_content = summary_text[section_split_pos:a_stock_split_pos]
-            a_stock_content = summary_text[a_stock_split_pos:]
+        if events_split_pos != -1:
+            # 有重要事件部分
+            if a_stock_split_pos != -1 and a_stock_split_pos < events_split_pos:
+                # A股部分在重要事件前面
+                us_stock_content = summary_text[section_split_pos:a_stock_split_pos]
+                a_stock_content = summary_text[a_stock_split_pos:events_split_pos]
+                events_content = summary_text[events_split_pos:]
+            else:
+                # A股部分在重要事件后面或不存在
+                if a_stock_split_pos != -1:
+                    stock_content_part = summary_text[section_split_pos:events_split_pos]
+                    us_stock_content = stock_content_part[:a_stock_split_pos - section_split_pos]
+                    a_stock_content = stock_content_part[a_stock_split_pos - section_split_pos:]
+                else:
+                    us_stock_content = summary_text[section_split_pos:events_split_pos]
+                    a_stock_content = ""
+                events_content = summary_text[events_split_pos:]
         else:
-            # 如果没有A股部分，美股内容包含剩余所有
-            us_stock_content = summary_text[section_split_pos:]
-            a_stock_content = ""
+            # 没有重要事件部分
+            if a_stock_split_pos != -1:
+                us_stock_content = summary_text[section_split_pos:a_stock_split_pos]
+                a_stock_content = summary_text[a_stock_split_pos:]
+            else:
+                us_stock_content = summary_text[section_split_pos:]
+                a_stock_content = ""
+            events_content = ""
     else:
-        # 如果没有找到分隔符，全部内容放入财经要点
-        finance_content = summary_text
+        # 如果没有找到板块与股票分析分隔符
+        if events_split_pos != -1:
+            finance_content = summary_text[:events_split_pos]
+            events_content = summary_text[events_split_pos:]
+        else:
+            finance_content = summary_text
+            events_content = ""
         us_stock_content = ""
         a_stock_content = ""
     
@@ -220,10 +246,11 @@ def generate_summary_html(summary_text):
         
         return formatted
     
-    # 转换三部分内容
+    # 转换各部分内容为HTML
     finance_html = convert_markdown_to_html(finance_content)
     us_stock_html = convert_markdown_to_html(us_stock_content)
     a_stock_html = convert_markdown_to_html(a_stock_content)
+    events_html = convert_markdown_to_html(events_content)
     
     # 生成HTML内容，包含Tab切换功能
     html_content = f'''
@@ -469,6 +496,12 @@ def generate_summary_html(summary_text):
                     <div class="tab-headers">
                         <div class="tab-header active" onclick="switchTab('finance')">财经要点摘要</div>
                         <div class="tab-header" onclick="switchTab('stocks')">板块与股票分析</div>
+                        <div class="tab-header" onclick="switchTab('events')">重要事件与社媒追踪</div>
+                    </div>
+                    
+                    <!-- 新增: 重要事件与社媒追踪内容 -->
+                    <div id="events" class="tab-content summary-body">
+                        {events_html}
                     </div>
                     
                     <!-- 主Tab内容 -->
@@ -679,6 +712,15 @@ def news_report():
             final_summary += f"## 📊 板块与股票分析\n\n{stock_report}\n\n---\n\n"
     except Exception as e:
         print(f"❌ 板块和股票分析生成失败: {str(e)}")
+    
+    # 新增: 生成重要事件与社交媒体追踪报告
+    try:
+        print("🔄 正在生成重要事件与社交媒体追踪报告...")
+        events_report = important_events_tracking.generate_events_tracking_report()
+        if events_report:
+            final_summary += f"## 📅 重要事件与社媒追踪\n\n{events_report}\n\n---\n\n"
+    except Exception as e:
+        print(f"❌ 重要事件与社交媒体追踪生成失败: {str(e)}")
 
     print("📝 正在组装最终消息...")
     for category, content in articles_data.items():
