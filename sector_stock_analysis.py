@@ -242,12 +242,12 @@ def filter_quality_a_stocks(stocks):
             # 如果已经包含交易所后缀，则直接使用
             if any(suffix in stock for suffix in ['.SS', '.SZ', '.HK']):
                 stock_code = stock
-                # 尝试从代码映射表中反查股票名称（可能不完美，但可以尝试）
+                # 尝试从代码映射表中反查股票名称
                 stock_name = stock
-                for name, code in get_a_stock_code.__globals__.get('stock_mapping', {}).items():
-                    if code == stock_code:
-                        stock_name = name
-                        break
+                # 创建一个反向映射表，从代码到名称
+                code_to_name = {code: name for name, code in get_a_stock_code.__globals__.get('stock_mapping', {}).items()}
+                if stock_code in code_to_name:
+                    stock_name = code_to_name[stock_code]
             else:
                 # 如果是股票名称，使用get_a_stock_code函数获取正确的代码
                 stock_name = stock
@@ -409,9 +409,9 @@ def analyze_sector_trends(sectors):
             etf = sector.get('etf', 'N/A')
             data_date = sector.get('data_date', 'N/A')
             
-            analysis_text += f"### {i+1}. {sector_name} (+{performance:.2f}%)\n\n"
+            analysis_text += f"### {i+1}. {sector_name} ({performance:+.2f}%)\n\n"
             analysis_text += f"- **表现**: +{performance:.2f}%\n"
-            analysis_text += f"- **单日涨幅**: +{daily_change:.2f}%\n" if isinstance(daily_change, (int, float)) else f"- **单日涨幅**: {daily_change}\n"
+            analysis_text += f"- **单日涨幅**: {daily_change:+.2f}%\n" if isinstance(daily_change, (int, float)) else f"- **单日涨幅**: {daily_change}\n"
             analysis_text += f"- **当前价格**: ¥{current_price:.2f}\n" if isinstance(current_price, (int, float)) else f"- **当前价格**: {current_price}\n"
             analysis_text += f"- **ETF代码**: {etf}\n"
             analysis_text += f"- **数据日期**: {data_date}\n"
