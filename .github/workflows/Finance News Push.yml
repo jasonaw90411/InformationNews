@@ -60,6 +60,7 @@ jobs:
         DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         ALI_MIND_API_KEY: ${{ secrets.ALI_MIND_API_KEY }}
         WTD_API_KEY: ${{ secrets.WTD_API_KEY }}
+        ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
         AI_SERVICE: ${{ inputs.ai_service || 'alimind' }}
     
     - name: Commit and Push HTML file

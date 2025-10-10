@@ -1,6 +1,7 @@
 # important_events_tracking.py - 重要事件和社交媒体追踪功能模块
 import os
 import json
+import requests
 from datetime import datetime, timedelta
 import pytz
 from openai import OpenAI
@@ -29,6 +30,12 @@ else:
 # 初始化OpenAI客户端（仅在有API密钥时）
 openai_client = OpenAI(api_key=api_key, base_url=api_base_url) if api_key else None
 
+# Alpha Vantage API Key
+alpha_vantage_api_key = os.environ.get("ALPHA_VANTAGE_API_KEY")
+if not alpha_vantage_api_key:
+    print("警告: 环境变量 ALPHA_VANTAGE_API_KEY 未设置，使用demo密钥")
+    alpha_vantage_api_key = "demo"
+
 # 获取北京时间
 def get_beijing_time():
     return datetime.now(pytz.timezone("Asia/Shanghai"))
@@ -37,80 +44,59 @@ def get_beijing_time():
 def get_important_meetings():
     """
     获取未来一个月重要的经济和政策会议信息
-    在实际应用中，这里可以对接真实的API或数据源
-    目前使用模拟数据
+    从Alpha Vantage API获取实时财经日历数据
+    获取失败时直接返回错误信息
     """
     try:
         print("🔄 正在获取重要会议信息...")
         current_time = get_beijing_time()
         one_month_later = current_time + timedelta(days=30)
         
-        # 模拟会议数据 - 实际应用中可以从外部API获取
-        meetings = [
-            {
-                "date": (current_time + timedelta(days=2)).strftime("%Y-%m-%d"),
-                "title": "中国CPI/PPI数据公布",
-                "description": "国家统计局公布月度居民消费价格指数和工业生产者出厂价格指数",
-                "importance": "高",
-                "category": "经济数据"
-            },
-            {
-                "date": (current_time + timedelta(days=5)).strftime("%Y-%m-%d"),
-                "title": "美联储FOMC会议",
-                "description": "美联储公开市场委员会讨论货币政策，可能宣布利率决议",
-                "importance": "高",
-                "category": "国际政策"
-            },
-            {
-                "date": (current_time + timedelta(days=7)).strftime("%Y-%m-%d"),
-                "title": "中国人民银行货币政策委员会会议",
-                "description": "讨论当前货币政策和经济形势",
-                "importance": "中高",
-                "category": "国内政策"
-            },
-            {
-                "date": (current_time + timedelta(days=10)).strftime("%Y-%m-%d"),
-                "title": "美国非农就业报告",
-                "description": "美国劳工部公布月度非农就业数据，是重要的经济指标",
-                "importance": "高",
-                "category": "经济数据"
-            },
-            {
-                "date": (current_time + timedelta(days=15)).strftime("%Y-%m-%d"),
-                "title": "中国三中全会（模拟日期）",
-                "description": "讨论国家重要政策方向和经济改革措施",
-                "importance": "高",
-                "category": "国内政策"
-            },
-            {
-                "date": (current_time + timedelta(days=18)).strftime("%Y-%m-%d"),
-                "title": "欧盟央行利率决议",
-                "description": "欧洲中央银行宣布最新利率决议和货币政策立场",
-                "importance": "中高",
-                "category": "国际政策"
-            },
-            {
-                "date": (current_time + timedelta(days=22)).strftime("%Y-%m-%d"),
-                "title": "中国GDP季度数据公布",
-                "description": "国家统计局公布季度国内生产总值数据",
-                "importance": "高",
-                "category": "经济数据"
-            },
-            {
-                "date": (current_time + timedelta(days=25)).strftime("%Y-%m-%d"),
-                "title": "美国CPI数据公布",
-                "description": "美国劳工部公布月度消费者价格指数数据",
-                "importance": "高",
-                "category": "经济数据"
-            },
-            {
-                "date": (current_time + timedelta(days=28)).strftime("%Y-%m-%d"),
-                "title": "OPEC+部长级会议",
-                "description": "讨论石油产量政策和市场调节措施",
-                "importance": "中高",
-                "category": "国际政策"
-            }
-        ]
+        # 从Alpha Vantage API获取实时数据
+        # 注意：此处使用的是免费API，有调用限制
+        # 实际应用中，建议设置API密钥为环境变量
+        url = f"https://www.alphavantage.co/query?function=ECONOMIC_CALENDAR&from_date={current_time.strftime('%Y-%m-%d')}&to_date={one_month_later.strftime('%Y-%m-%d')}&apikey={alpha_vantage_api_key}"
+        
+        print("📡 尝试从Alpha Vantage API获取财经日历数据...")
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        # 检查API是否返回了有效的数据
+        if "data" not in data or len(data["data"]) == 0:
+            print("❌ API返回的数据为空或格式不正确")
+            raise Exception("API返回的数据无效")
+        
+        print("✅ 成功从API获取实时财经日历数据")
+        meetings = []
+        
+        # 处理API返回的数据
+        for item in data["data"]:
+            # 过滤重要性较高的事件
+            if item.get("importance") in ["high", "medium"]:
+                # 将API数据转换为我们需要的格式
+                importance_map = {"high": "高", "medium": "中高", "low": "低"}
+                
+                # 确定事件类别
+                category = "经济数据"
+                event_title = item.get("event", "")
+                if any(keyword in event_title.lower() for keyword in ["fed", "central bank", "利率", "monetary policy"]):
+                    category = "国际政策" if "us" in event_title.lower() or "fomc" in event_title.lower() else "国内政策"
+                elif any(keyword in event_title.lower() for keyword in ["cpi", "ppi", "gdp", "employment"]):
+                    category = "经济数据"
+                
+                meetings.append({
+                    "date": item.get("date"),
+                    "title": event_title,
+                    "description": item.get("event", "") + " - " + item.get("country", "全球"),
+                    "importance": importance_map.get(item.get("importance"), "中"),
+                    "category": category
+                })
+        
+        # 确保有足够的数据
+        if len(meetings) < 5:
+            print("❌ API返回的数据不足")
+            raise Exception("API返回的数据不足")
         
         # 按日期排序会议
         meetings.sort(key=lambda x: x["date"])
@@ -142,7 +128,7 @@ def get_important_meetings():
     except Exception as e:
         print(f"❌ 获取重要会议信息失败: {str(e)}")
         # 返回错误信息
-        return "# 📅 未来一个月重要经济与政策会议\n\n获取会议信息失败，请稍后重试。"
+        return "当前经济日历信息获取失败"
 
 # 获取社交媒体重要人物的最新消息
 def get_social_media_updates():
