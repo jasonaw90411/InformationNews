@@ -236,14 +236,27 @@ def filter_popular_stocks(sector_trends):
 def filter_quality_a_stocks(stocks):
     quality_stocks = []
     
-    for stock_name in stocks:
+    for stock in stocks:
         try:
-            # 为A股股票添加交易所后缀
-            # 简单实现，实际应用中需要根据公司所属交易所添加正确的后缀
-            if stock_name in ['贵州茅台', '中国平安', '恒瑞医药', '招商银行']:
-                stock_code = stock_name + '.SS'  # 上交所股票
+            # 判断传入的是股票代码还是股票名称
+            # 如果已经包含交易所后缀，则直接使用
+            if any(suffix in stock for suffix in ['.SS', '.SZ', '.HK']):
+                stock_code = stock
+                # 尝试从代码映射表中反查股票名称（可能不完美，但可以尝试）
+                stock_name = stock
+                for name, code in get_a_stock_code.__globals__.get('stock_mapping', {}).items():
+                    if code == stock_code:
+                        stock_name = name
+                        break
             else:
-                stock_code = stock_name + '.SZ'  # 深交所股票
+                # 如果是股票名称，使用get_a_stock_code函数获取正确的代码
+                stock_name = stock
+                stock_code = get_a_stock_code(stock_name)
+                
+                # 如果无法获取代码，跳过或使用备用逻辑
+                if not stock_code:
+                    print(f"警告: 无法获取 {stock_name} 的股票代码")
+                    continue
             
             # 使用get_stock_data函数获取A股数据
             stock_data = get_stock_data(stock_code)
@@ -257,34 +270,65 @@ def filter_quality_a_stocks(stocks):
             
             # 筛选条件1: 有正的盈利
             metrics = stock_data['metrics'].get('metric', {})
+            # 尝试不同的市盈率字段名称
             pe_ratio = metrics.get('peNormalizedAnnual', 0)
+            if pe_ratio == 0:
+                pe_ratio = metrics.get('peRatio', 0)
+            
+            # 尝试不同的利润率字段名称
             profit_margin = metrics.get('profitMargin', 0)
-            current_price = metrics.get('price', 0)  # 获取当前股价
             
-            # 避免负的市盈率或过高的市盈率
-            if pe_ratio <= 0 or pe_ratio > 200:  # 放宽上限以适应A股特点
+            # 尝试不同的价格字段名称
+            current_price = metrics.get('price', 0)
+            if current_price == 0:
+                current_price = metrics.get('regularMarketPrice', 0)
+                if current_price == 0:
+                    current_price = metrics.get('lastPrice', 0)
+            
+            # 避免负的市盈率，放宽上限以适应A股特点
+            # 不强制要求PE < 300，可以有一定弹性
+            if pe_ratio <= 0 and pe_ratio != 0:  # 只排除负市盈率，0值保留
                 continue
             
-            # 筛选条件2: 有正的利润率
-            if profit_margin <= 0:
-                continue
+            # 不强制要求利润率数据，允许缺失
             
-            # 筛选条件3: 近5日技术走势良好（收盘价呈上升趋势）
+            # 获取近期表现数据，使用更长的周期（如5天）
             candles = stock_data['candles']
-            if 'c' in candles and len(candles['c']) >= 3:
-                # 检查最近3天是否呈上升趋势
+            if 'c' in candles and len(candles['c']) >= 5:
+                # 使用5天周期计算近期表现
                 close_prices = candles['c']
-                if close_prices[-1] > close_prices[-2] and close_prices[-2] > close_prices[-3]:
-                    quality_stocks.append({
-                        'symbol': stock_code,
-                        'name': stock_name,
-                        'pe_ratio': pe_ratio,
-                        'profit_margin': profit_margin,
-                        'current_price': current_price,
-                        'recent_performance': (close_prices[-1] - close_prices[0]) / close_prices[0] * 100
-                    })
+                # 计算整体涨幅百分比
+                recent_performance = (close_prices[-1] - close_prices[0]) / close_prices[0] * 100
+                
+                # 构建股票信息字典
+                stock_info = {
+                    'symbol': stock_code,
+                    'name': stock_name,
+                    'pe_ratio': pe_ratio if pe_ratio > 0 else None,  # 只记录有效的PE值
+                    'profit_margin': profit_margin if profit_margin > 0 else None,  # 只记录有效的利润率
+                    'current_price': current_price,
+                    'recent_performance': recent_performance
+                }
+                
+                # 无论趋势如何，只要有价格数据就添加，后面再排序
+                quality_stocks.append(stock_info)
+            elif 'c' in candles and len(candles['c']) > 0:
+                # 至少有收盘价数据，也添加进来
+                close_prices = candles['c']
+                recent_performance = (close_prices[-1] - close_prices[0]) / close_prices[0] * 100 if len(close_prices) > 1 else 0
+                
+                stock_info = {
+                    'symbol': stock_code,
+                    'name': stock_name,
+                    'pe_ratio': pe_ratio if pe_ratio > 0 else None,
+                    'profit_margin': profit_margin if profit_margin > 0 else None,
+                    'current_price': current_price,
+                    'recent_performance': recent_performance
+                }
+                
+                quality_stocks.append(stock_info)
         except Exception as e:
-            print(f"处理A股 {stock_name} 时出错: {str(e)}")
+            print(f"处理A股 {stock} 时出错: {str(e)}")
             continue
     
     # 按近期表现排序
@@ -501,6 +545,96 @@ def get_top_a_sectors():
         # 这里为了保持兼容性，返回空列表，但实际应用中应该处理这种情况
         return []
 
+# 智能获取A股股票代码
+def get_a_stock_code(stock_name):
+    """
+    根据股票名称获取对应的A股代码（含交易所后缀）
+    """
+    stock_mapping = {
+        # 新能源板块
+        '宁德时代': '300750.SZ', '比亚迪': '002594.SZ', '隆基绿能': '601012.SS', 
+        '阳光电源': '300274.SZ', '中环股份': '002129.SZ', '恩捷股份': '002812.SZ',
+        '赣锋锂业': '002460.SZ', '天齐锂业': '002466.SZ', '华友钴业': '603799.SS', 
+        '亿纬锂能': '300014.SZ', '晶盛机电': '300316.SZ', '先导智能': '300450.SZ',
+        '杭可科技': '688006.SS',
+        
+        # 半导体板块
+        '中芯国际': '688981.SS', '韦尔股份': '603501.SS', '北方华创': '002371.SZ',
+        '卓胜微': '300782.SZ', '兆易创新': '603986.SS', '三安光电': '600703.SS',
+        '紫光国微': '002049.SZ', '通富微电': '002156.SZ', '长电科技': '600584.SS',
+        '华天科技': '002185.SZ', '士兰微': '600460.SS', '圣邦股份': '300661.SZ',
+        '澜起科技': '688008.SS', '景嘉微': '300474.SZ',
+        
+        # 医药生物板块
+        '恒瑞医药': '600276.SS', '迈瑞医疗': '300760.SZ', '药明康德': '603259.SS',
+        '爱尔眼科': '300015.SZ', '智飞生物': '300122.SZ', '信达生物': '01801.HK',
+        '君实生物': '688180.SS', '百济神州': '688235.SS', '康龙化成': '300759.SZ',
+        '凯莱英': '002821.SZ', '片仔癀': '600436.SS', '云南白药': '000538.SZ',
+        '同仁堂': '600085.SS', '东阿阿胶': '000423.SZ', '金域医学': '603882.SS',
+        '迪安诊断': '300244.SZ', '乐普医疗': '300003.SZ', '鱼跃医疗': '002223.SZ',
+        
+        # 白酒板块
+        '贵州茅台': '600519.SS', '五粮液': '000858.SZ', '泸州老窖': '000568.SZ',
+        '山西汾酒': '600809.SS', '洋河股份': '002304.SZ', '古井贡酒': '000596.SZ',
+        '口子窖': '603589.SS', '今世缘': '603369.SS', '迎驾贡酒': '603198.SS',
+        '水井坊': '600779.SS', '舍得酒业': '600702.SS', '酒鬼酒': '000799.SZ',
+        
+        # 光伏板块
+        '通威股份': '600438.SS', '晶科能源': '688223.SS', '特变电工': '600089.SS',
+        '东方日升': '300118.SZ', '天合光能': '688599.SS', '福斯特': '603806.SS',
+        '福莱特': '601865.SS', '大全能源': '688303.SS', '保利协鑫': '03800.HK',
+        '新特能源': '01799.HK', '爱旭股份': '600732.SS', '晶澳科技': '002459.SZ',
+        
+        # 人工智能板块
+        '科大讯飞': '002230.SZ', '中科曙光': '603019.SS', '浪潮信息': '000977.SZ',
+        '海康威视': '002415.SZ', '大华股份': '002236.SZ', '寒武纪': '688256.SS',
+        '虹软科技': '688088.SS', '旷视科技': '000050.HK', '商汤科技': '00020.HK',
+        '依图科技': '688627.SS', '同方股份': '600100.SS', '紫光股份': '000938.SZ',
+        '神州数码': '000034.SZ', '东软集团': '600718.SS', '恒生电子': '600570.SS',
+        '用友网络': '600588.SS',
+        
+        # 券商板块
+        '中信证券': '600030.SS', '华泰证券': '601688.SS', '国泰君安': '601211.SS',
+        '招商证券': '600999.SS', '中金公司': '601995.SS', '中信建投': '601066.SS',
+        '海通证券': '600837.SS', '广发证券': '000776.SZ', '东方证券': '600958.SS',
+        '兴业证券': '601377.SS', '中国银河': '601881.SS', '国信证券': '002736.SZ',
+        '平安证券': '601318.SS', '长江证券': '000783.SZ',
+        
+        # 军工板块
+        '中国重工': '601989.SS', '中航沈飞': '600760.SS', '中直股份': '600038.SS',
+        '航发动力': '600893.SS', '洪都航空': '600316.SS', '中国卫星': '600118.SS',
+        '航天电子': '600879.SS', '航天动力': '600343.SS', '航天彩虹': '002389.SZ',
+        '中国船舶': '600150.SS', '中船防务': '600685.SS', '中国动力': '600482.SS',
+        '北方导航': '600435.SS', '内蒙一机': '600967.SS', '光电股份': '600184.SS',
+        '振华科技': '000733.SZ', '中航光电': '002179.SZ', '航天电器': '002025.SZ',
+        
+        # 汽车板块
+        '长城汽车': '601633.SS', '长安汽车': '000625.SZ', '上汽集团': '600104.SS',
+        '广汽集团': '601238.SS', '吉利汽车': '00175.HK', '小鹏汽车': 'XPEV',
+        '理想汽车': 'LI', '蔚来汽车': 'NIO', '国轩高科': '002074.SZ',
+        '德赛西威': '002920.SZ', '均胜电子': '600699.SS', '拓普集团': '601689.SS',
+        
+        # 银行板块
+        '招商银行': '600036.SS', '平安银行': '000001.SZ', '兴业银行': '601166.SS',
+        '工商银行': '601398.SS', '建设银行': '601939.SS', '农业银行': '601288.SS',
+        '中国银行': '601988.SS', '邮储银行': '601658.SS', '宁波银行': '002142.SZ',
+        '南京银行': '601009.SS', '江苏银行': '600919.SS', '杭州银行': '600926.SS',
+        '浦发银行': '600000.SS', '中信银行': '601998.SS', '民生银行': '600016.SS',
+        
+        # 消费板块
+        '伊利股份': '600887.SS', '蒙牛乳业': '02319.HK', '海天味业': '603288.SS',
+        '中炬高新': '600872.SS', '双汇发展': '000895.SZ', '中国中免': '601888.SS',
+        '王府井': '600859.SS', '百联股份': '600827.SS', '永辉超市': '601933.SS',
+        '李宁': '02331.HK', '安踏体育': '02020.HK', '特步国际': '01368.HK',
+        
+        # 科技板块
+        '腾讯控股': '00700.HK', '阿里巴巴': '9988.HK', '美团': '03690.HK',
+        '京东': 'JD', '拼多多': 'PDD', '立讯精密': '002475.SZ',
+        '歌尔股份': '002241.SZ', '蓝思科技': '300433.SZ', '德赛电池': '000049.SZ'
+    }
+    
+    return stock_mapping.get(stock_name, None)
+
 # 筛选热门A股
 def filter_popular_a_stocks(sector_trends):
     # 基于板块趋势和热点，选择一些可能的热门A股
@@ -597,17 +731,31 @@ def filter_popular_a_stocks(sector_trends):
         for sector in sorted_sectors[:4]:  # 选择表现最好的4个板块
             sector_name = sector['name']
             if sector_name in popular_stocks:
-                # 每个板块选择2只股票
-                selected_stocks.extend(popular_stocks[sector_name][:2])
+                # 每个板块选择2只股票，并获取对应的股票代码
+                for stock_name in popular_stocks[sector_name][:2]:
+                    stock_code = get_a_stock_code(stock_name)
+                    if stock_code:
+                        selected_stocks.append(stock_code)
+                    else:
+                        print(f"警告: 无法获取 {stock_name} 的股票代码")
+                        # 如果无法获取代码，仍然添加股票名称作为备选
+                        selected_stocks.append(stock_name)
     
     # 如果没有足够的股票，添加一些默认股票
     if len(selected_stocks) < 8:  # 调整目标数量为8
         default_stocks = ['贵州茅台', '宁德时代', '比亚迪', '中芯国际', '招商银行', '恒瑞医药', '隆基绿能', '韦尔股份']  # 增加默认股票数量
-        for stock in default_stocks:
-            if stock not in selected_stocks:
-                selected_stocks.append(stock)
-            if len(selected_stocks) >= 8:  # 目标数量为8
-                break
+        for stock_name in default_stocks:
+            # 检查是否已存在
+            if stock_name not in selected_stocks:
+                # 尝试获取股票代码
+                stock_code = get_a_stock_code(stock_name)
+                if stock_code:
+                    selected_stocks.append(stock_code)
+                else:
+                    selected_stocks.append(stock_name)
+                
+                if len(selected_stocks) >= 8:  # 目标数量为8
+                    break
     
     return selected_stocks
 
