@@ -1,0 +1,367 @@
+{
+  "a_stock_sectors": {
+    "新能源": "515030.SS",
+    "半导体": "512480.SS",
+    "光伏": "515790.SS",
+    "医药": "512010.SS",
+    "科技": "515000.SS",
+    "军工": "512660.SS",
+    "金融": "510230.SS",
+    "消费": "510150.SS",
+    "农业": "516550.SS",
+    "有色金属": "512400.SS",
+    "汽车": "516110.SS",
+    "白酒": "512690.SS",
+    "高端制造": "562910.SS",
+    "稀土永磁": "516320.SS",
+    "电网设备": "561380.SS",
+    "人工智能": "515980.SS",
+    "消费电子": "561600.SS",
+    "机器人": "560630.SS"
+  },
+  
+  "us_stock_sectors": {
+    "Technology": "XLK",
+    "Financial Services": "XLF",
+    "Healthcare": "XLV",
+    "Consumer Cyclical": "XLY",
+    "Industrials": "XLI",
+    "Energy": "XLE",
+    "Utilities": "XLU",
+    "Real Estate": "XLRE",
+    "Consumer Defensive": "XLP",
+    "Materials": "XLB",
+    "Communication": "XLC"
+  },
+
+  "popular_stocks_by_sector": {
+    "新能源": {
+      "stocks": [
+        {"name": "宁德时代", "code": "300750.SZ"},
+        {"name": "比亚迪", "code": "002594.SZ"},
+        {"name": "隆基绿能", "code": "601012.SS"},
+        {"name": "阳光电源", "code": "300274.SZ"},
+        {"name": "中环股份", "code": "002129.SZ"},
+        {"name": "恩捷股份", "code": "002812.SZ"},
+        {"name": "赣锋锂业", "code": "002460.SZ"},
+        {"name": "天齐锂业", "code": "002466.SZ"},
+        {"name": "华友钴业", "code": "603799.SS"},
+        {"name": "亿纬锂能", "code": "300014.SZ"},
+        {"name": "晶盛机电", "code": "300316.SZ"},
+        {"name": "先导智能", "code": "300450.SZ"},
+        {"name": "杭可科技", "code": "688006.SS"},
+        {"name": "国轩高科", "code": "002074.SZ"},
+        {"name": "孚能科技", "code": "688567.SS"},
+        {"name": "鹏辉能源", "code": "300438.SZ"},
+        {"name": "珈伟新能", "code": "300317.SZ"},
+        {"name": "当升科技", "code": "300073.SZ"},
+        {"name": "容百科技", "code": "688005.SS"},
+        {"name": "天赐材料", "code": "002709.SZ"},
+        {"name": "杉杉股份", "code": "600884.SS"}
+      ]
+    },
+    "半导体": {
+      "stocks": [
+        {"name": "中芯国际", "code": "688981.SS"},
+        {"name": "韦尔股份", "code": "603501.SS"},
+        {"name": "北方华创", "code": "002371.SZ"},
+        {"name": "卓胜微", "code": "300782.SZ"},
+        {"name": "兆易创新", "code": "603986.SS"},
+        {"name": "三安光电", "code": "600703.SS"},
+        {"name": "紫光国微", "code": "002049.SZ"},
+        {"name": "通富微电", "code": "002156.SZ"},
+        {"name": "长电科技", "code": "600584.SS"},
+        {"name": "华天科技", "code": "002185.SZ"},
+        {"name": "士兰微", "code": "600460.SS"},
+        {"name": "圣邦股份", "code": "300661.SZ"},
+        {"name": "澜起科技", "code": "688008.SS"},
+        {"name": "景嘉微", "code": "300474.SZ"}
+      ]
+    },
+    "光伏": {
+      "stocks": [
+        {"name": "隆基绿能", "code": "601012.SS"},
+        {"name": "晶科能源", "code": "688223.SS"},
+        {"name": "通威股份", "code": "600438.SS"},
+        {"name": "阳光电源", "code": "300274.SZ"},
+        {"name": "中环股份", "code": "002129.SZ"},
+        {"name": "特变电工", "code": "600089.SS"},
+        {"name": "东方日升", "code": "300118.SZ"},
+        {"name": "天合光能", "code": "688599.SS"},
+        {"name": "福斯特", "code": "603806.SS"},
+        {"name": "福莱特", "code": "601865.SS"},
+        {"name": "大全能源", "code": "688303.SS"},
+        {"name": "保利协鑫", "code": "03800.HK"},
+        {"name": "新特能源", "code": "01799.HK"},
+        {"name": "爱旭股份", "code": "600732.SS"},
+        {"name": "晶澳科技", "code": "002459.SZ"}
+      ]
+    },
+    "医药": {
+      "stocks": [
+        {"name": "恒瑞医药", "code": "600276.SS"},
+        {"name": "迈瑞医疗", "code": "300760.SZ"},
+        {"name": "药明康德", "code": "603259.SS"},
+        {"name": "爱尔眼科", "code": "300015.SZ"},
+        {"name": "智飞生物", "code": "300122.SZ"},
+        {"name": "信达生物", "code": "01801.HK"},
+        {"name": "君实生物", "code": "688180.SS"},
+        {"name": "百济神州", "code": "688235.SS"},
+        {"name": "康龙化成", "code": "300759.SZ"},
+        {"name": "凯莱英", "code": "002821.SZ"}
+      ]
+    },
+    "科技": {
+      "stocks": [
+        {"name": "科大讯飞", "code": "002230.SZ"},
+        {"name": "中科曙光", "code": "603019.SS"},
+        {"name": "浪潮信息", "code": "000977.SZ"},
+        {"name": "海康威视", "code": "002415.SZ"},
+        {"name": "大华股份", "code": "002236.SZ"},
+        {"name": "寒武纪", "code": "688256.SS"},
+        {"name": "紫光股份", "code": "000938.SZ"},
+        {"name": "中兴通讯", "code": "000063.SZ"},
+        {"name": "烽火通信", "code": "600498.SS"},
+        {"name": "中科软", "code": "603927.SS"}
+      ]
+    },
+    "军工": {
+      "stocks": [
+        {"name": "中国重工", "code": "601989.SS"},
+        {"name": "中航沈飞", "code": "600760.SS"},
+        {"name": "中直股份", "code": "600038.SS"},
+        {"name": "航发动力", "code": "600893.SS"},
+        {"name": "洪都航空", "code": "600316.SS"},
+        {"name": "中国卫星", "code": "600118.SS"},
+        {"name": "航天电子", "code": "600879.SS"},
+        {"name": "航天动力", "code": "600343.SS"},
+        {"name": "航天彩虹", "code": "002389.SZ"},
+        {"name": "中国船舶", "code": "600150.SS"},
+        {"name": "中船防务", "code": "600685.SS"},
+        {"name": "中国动力", "code": "600482.SS"},
+        {"name": "北方导航", "code": "600435.SS"},
+        {"name": "内蒙一机", "code": "600967.SS"},
+        {"name": "光电股份", "code": "600184.SS"},
+        {"name": "振华科技", "code": "000733.SZ"},
+        {"name": "中航光电", "code": "002179.SZ"},
+        {"name": "航天电器", "code": "002025.SZ"}
+      ]
+    },
+    "金融": {
+      "stocks": [
+        {"name": "招商银行", "code": "600036.SS"},
+        {"name": "平安银行", "code": "000001.SZ"},
+        {"name": "兴业银行", "code": "601166.SS"},
+        {"name": "工商银行", "code": "601398.SS"},
+        {"name": "建设银行", "code": "601939.SS"},
+        {"name": "农业银行", "code": "601288.SS"},
+        {"name": "中国银行", "code": "601988.SS"},
+        {"name": "邮储银行", "code": "601658.SS"},
+        {"name": "宁波银行", "code": "002142.SZ"},
+        {"name": "南京银行", "code": "601009.SS"}
+      ]
+    },
+    "消费": {
+      "stocks": [
+        {"name": "贵州茅台", "code": "600519.SS"},
+        {"name": "五粮液", "code": "000858.SZ"},
+        {"name": "伊利股份", "code": "600887.SS"},
+        {"name": "海天味业", "code": "603288.SS"},
+        {"name": "中国中免", "code": "601888.SS"},
+        {"name": "美团", "code": "03690.HK"},
+        {"name": "京东", "code": "JD"},
+        {"name": "拼多多", "code": "PDD"},
+        {"name": "李宁", "code": "02331.HK"},
+        {"name": "安踏体育", "code": "02020.HK"},
+        {"name": "王府井", "code": "600859.SS"},
+        {"name": "百联股份", "code": "600827.SS"},
+        {"name": "永辉超市", "code": "601933.SS"},
+        {"name": "苏宁易购", "code": "002024.SZ"},
+        {"name": "红旗连锁", "code": "002697.SZ"},
+        {"name": "银座股份", "code": "600858.SS"},
+        {"name": "合肥百货", "code": "000417.SZ"},
+        {"name": "文峰股份", "code": "601010.SS"},
+        {"name": "新世界", "code": "600628.SS"}
+      ]
+    },
+    "农业": {
+      "stocks": [
+        {"name": "牧原股份", "code": "002714.SZ"},
+        {"name": "温氏股份", "code": "300498.SZ"},
+        {"name": "新希望", "code": "000876.SZ"},
+        {"name": "海大集团", "code": "002311.SZ"},
+        {"name": "隆平高科", "code": "000998.SZ"},
+        {"name": "北大荒", "code": "600598.SS"},
+        {"name": "大北农", "code": "002385.SZ"},
+        {"name": "荃银高科", "code": "300087.SZ"},
+        {"name": "登海种业", "code": "002041.SZ"},
+        {"name": "苏垦农发", "code": "601952.SS"}
+      ]
+    },
+    "有色金属": {
+      "stocks": [
+        {"name": "紫金矿业", "code": "601899.SS"},
+        {"name": "江西铜业", "code": "600362.SS"},
+        {"name": "云南铜业", "code": "000878.SZ"},
+        {"name": "铜陵有色", "code": "000630.SZ"},
+        {"name": "中国铝业", "code": "601600.SS"},
+        {"name": "南山铝业", "code": "600219.SS"},
+        {"name": "中金岭南", "code": "000060.SZ"},
+        {"name": "驰宏锌锗", "code": "600497.SS"},
+        {"name": "云南锗业", "code": "002428.SZ"},
+        {"name": "北方稀土", "code": "600111.SS"}
+      ]
+    },
+    "汽车": {
+      "stocks": [
+        {"name": "比亚迪", "code": "002594.SZ"},
+        {"name": "长城汽车", "code": "601633.SS"},
+        {"name": "长安汽车", "code": "000625.SZ"},
+        {"name": "上汽集团", "code": "600104.SS"},
+        {"name": "广汽集团", "code": "601238.SS"},
+        {"name": "吉利汽车", "code": "00175.HK"},
+        {"name": "小鹏汽车", "code": "XPEV"},
+        {"name": "理想汽车", "code": "LI"},
+        {"name": "蔚来汽车", "code": "NIO"},
+        {"name": "宁德时代", "code": "300750.SZ"},
+        {"name": "亿纬锂能", "code": "300014.SZ"},
+        {"name": "国轩高科", "code": "002074.SZ"},
+        {"name": "德赛西威", "code": "002920.SZ"},
+        {"name": "均胜电子", "code": "600699.SS"},
+        {"name": "拓普集团", "code": "601689.SS"}
+      ]
+    },
+    "白酒": {
+      "stocks": [
+        {"name": "贵州茅台", "code": "600519.SS"},
+        {"name": "五粮液", "code": "000858.SZ"},
+        {"name": "泸州老窖", "code": "000568.SZ"},
+        {"name": "山西汾酒", "code": "600809.SS"},
+        {"name": "洋河股份", "code": "002304.SZ"},
+        {"name": "古井贡酒", "code": "000596.SZ"},
+        {"name": "口子窖", "code": "603589.SS"},
+        {"name": "今世缘", "code": "603369.SS"},
+        {"name": "迎驾贡酒", "code": "603198.SS"},
+        {"name": "水井坊", "code": "600779.SS"},
+        {"name": "舍得酒业", "code": "600702.SS"},
+        {"name": "酒鬼酒", "code": "000799.SZ"}
+      ]
+    },
+    "高端制造": {
+      "stocks": [
+        {"name": "三一重工", "code": "600031.SS"},
+        {"name": "徐工机械", "code": "000425.SZ"},
+        {"name": "中联重科", "code": "000157.SZ"},
+        {"name": "中国中车", "code": "601766.SS"},
+        {"name": "中集集团", "code": "000039.SZ"},
+        {"name": "国电南瑞", "code": "600406.SS"},
+        {"name": "汇川技术", "code": "300124.SZ"},
+        {"name": "上海机电", "code": "600835.SS"},
+        {"name": "潍柴动力", "code": "000338.SZ"},
+        {"name": "柳工", "code": "000528.SZ"}
+      ]
+    },
+    "稀土永磁": {
+      "stocks": [
+        {"name": "北方稀土", "code": "600111.SS"},
+        {"name": "中国稀土", "code": "000831.SZ"},
+        {"name": "盛和资源", "code": "600392.SS"},
+        {"name": "广晟有色", "code": "600259.SS"},
+        {"name": "厦门钨业", "code": "600549.SS"},
+        {"name": "中科三环", "code": "000970.SZ"},
+        {"name": "正海磁材", "code": "300224.SZ"},
+        {"name": "宁波韵升", "code": "600366.SS"},
+        {"name": "安泰科技", "code": "000969.SZ"},
+        {"name": "英洛华", "code": "000795.SZ"}
+      ]
+    },
+    "电网设备": {
+      "stocks": [
+        {"name": "国电南瑞", "code": "600406.SS"},
+        {"name": "许继电气", "code": "000400.SZ"},
+        {"name": "平高电气", "code": "600312.SS"},
+        {"name": "特变电工", "code": "600089.SS"},
+        {"name": "思源电气", "code": "002028.SZ"},
+        {"name": "中国西电", "code": "601179.SS"},
+        {"name": "东方电子", "code": "000682.SZ"},
+        {"name": "长高集团", "code": "002452.SZ"},
+        {"name": "风范股份", "code": "601700.SS"},
+        {"name": "大金重工", "code": "002487.SZ"}
+      ]
+    },
+    "人工智能": {
+      "stocks": [
+        {"name": "科大讯飞", "code": "002230.SZ"},
+        {"name": "中科曙光", "code": "603019.SS"},
+        {"name": "浪潮信息", "code": "000977.SZ"},
+        {"name": "海康威视", "code": "002415.SZ"},
+        {"name": "大华股份", "code": "002236.SZ"},
+        {"name": "寒武纪", "code": "688256.SS"},
+        {"name": "虹软科技", "code": "688088.SS"},
+        {"name": "紫光股份", "code": "000938.SZ"},
+        {"name": "同方股份", "code": "600100.SS"},
+        {"name": "中科软", "code": "603927.SS"},
+        {"name": "东软集团", "code": "600718.SS"},
+        {"name": "恒生电子", "code": "600570.SS"},
+        {"name": "用友网络", "code": "600588.SS"},
+        {"name": "神州数码", "code": "000034.SZ"}
+      ]
+    },
+    "消费电子": {
+      "stocks": [
+        {"name": "立讯精密", "code": "002475.SZ"},
+        {"name": "歌尔股份", "code": "002241.SZ"},
+        {"name": "蓝思科技", "code": "300433.SZ"},
+        {"name": "鹏鼎控股", "code": "002938.SZ"},
+        {"name": "水晶光电", "code": "002273.SZ"},
+        {"name": "欧菲光", "code": "002456.SZ"},
+        {"name": "东山精密", "code": "002384.SZ"},
+        {"name": "领益智造", "code": "002600.SZ"},
+        {"name": "信维通信", "code": "300136.SZ"},
+        {"name": "长盈精密", "code": "300115.SZ"},
+        {"name": "安洁科技", "code": "002635.SZ"},
+        {"name": "德赛电池", "code": "000049.SZ"},
+        {"name": "欣旺达", "code": "300207.SZ"},
+        {"name": "顺络电子", "code": "002138.SZ"}
+      ]
+    },
+    "机器人": {
+      "stocks": [
+        {"name": "新松机器人", "code": "300024.SZ"},
+        {"name": "埃斯顿", "code": "002747.SZ"},
+        {"name": "汇川技术", "code": "300124.SZ"},
+        {"name": "拓斯达", "code": "300607.SZ"},
+        {"name": "埃夫特", "code": "688165.SS"},
+        {"name": "机器人", "code": "300024.SZ"},
+        {"name": "科沃斯", "code": "603486.SS"},
+        {"name": "石头科技", "code": "688169.SS"},
+        {"name": "绿的谐波", "code": "688017.SS"},
+        {"name": "双环传动", "code": "002472.SZ"},
+        {"name": "汇川技术", "code": "300124.SZ"},
+        {"name": "汉宇集团", "code": "300403.SZ"},
+        {"name": "信捷电气", "code": "603416.SS"},
+        {"name": "英威腾", "code": "002334.SZ"}
+      ]
+    }
+  },
+
+  "us_popular_stocks_by_sector": {
+    "Technology": [
+      "AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA",
+      "NVDA", "PLTR", "CRWD", "SNPS", "CDNS", "AI",
+      "INTC", "AMD", "QCOM", "ASML", "AVGO", "TXN",
+      "ADBE", "CRM", "ORCL", "SAP", "IBM", "SNPS",
+      "MNDY", "DDOG", "ESTC", "PANW"
+    ],
+    "Financial Services": ["JPM", "BAC", "GS", "MS", "C", "WFC", "USB", "BLK"],
+    "Healthcare": ["JNJ", "UNH", "PFE", "ABBV", "TMO", "MRK", "LLY", "PDD"],
+    "Consumer Cyclical": ["NKE", "DIS", "HD", "MCD", "SBUX", "TGT", "AMZN", "BKNG"],
+    "Industrials": ["BA", "UNP", "HON", "CAT", "UPS", "LMT", "RTX", "DE"],
+    "Energy": ["XOM", "CVX", "COP", "SLB", "EOG", "PXD", "MPC", "VLO"],
+    "Utilities": ["NEE", "DUK", "SO", "EXC", "D", "AEP", "XEL", "WEC"],
+    "Real Estate": ["AMT", "DLR", "PLD", "CCI", "SPG", "EQIX", "PSA", "O"],
+    "Consumer Defensive": [],
+    "Materials": [],
+    "Communication": []
+  }
+}
