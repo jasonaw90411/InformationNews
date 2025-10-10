@@ -360,8 +360,8 @@
     "Energy": ["XOM", "CVX", "COP", "SLB", "EOG", "PXD", "MPC", "VLO"],
     "Utilities": ["NEE", "DUK", "SO", "EXC", "D", "AEP", "XEL", "WEC"],
     "Real Estate": ["AMT", "DLR", "PLD", "CCI", "SPG", "EQIX", "PSA", "O"],
-    "Consumer Defensive": [],
-    "Materials": [],
-    "Communication": []
+    "Consumer Defensive": ["PG", "KO", "PEP", "WMT", "COST", "CL", "KMB", "GIS", "K", "SJM", "CHD", "CLX", "MKC", "HSY", "KHC"],
+    "Materials": ["LIN", "APD", "ECL", "SHW", "FCX", "NEM", "DOW", "DD", "PPG", "NUE", "STLD", "VMC", "MLM", "CF", "FMC"],
+    "Communication": ["T", "VZ", "CMCSA", "DIS", "NFLX", "TMUS", "CHTR", "VIA", "FOXA", "DISH", "LUMN", "CTL", "ATUS", "CABO", "WOW"]
   }
 }
