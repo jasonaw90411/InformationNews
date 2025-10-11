@@ -395,20 +395,20 @@ def analyze_sector_trends(sectors):
         
         # 准备分析文本，包含详细的板块数据
         analysis_text = "# 板块趋势分析\n\n"
-        analysis_text += "## 近期表现最佳的板块\n\n"
+        analysis_text += "## 最近一日涨幅和最近三日整体涨幅\n\n"
         
         # 分析前4个表现最好的板块，包含详细数据
         for i, sector in enumerate(sorted_sectors[:4]):
             sector_name = sector['name']
-            performance = sector['performance']
-            daily_change = sector.get('daily_change', 'N/A')
+            performance = sector['performance']  # 近3个交易日涨幅
+            daily_change = sector.get('daily_change', 'N/A')  # 单日涨幅
             current_price = sector.get('current_price', 'N/A')
             etf = sector.get('etf', 'N/A')
             data_date = sector.get('data_date', 'N/A')
             
-            analysis_text += f"### {i+1}. {sector_name} ({performance:+.2f}%)\n\n"
-            analysis_text += f"- **表现**: +{performance:.2f}%\n"
-            analysis_text += f"- **单日涨幅**: {daily_change:+.2f}%\n" if isinstance(daily_change, (int, float)) else f"- **单日涨幅**: {daily_change}\n"
+            analysis_text += f"### {i+1}. {sector_name} (最近一日涨幅: {daily_change:+.2f}%, 最近三日整体涨幅: {performance:+.2f}%)\n\n"
+            analysis_text += f"- **最近三日整体涨幅**: +{performance:.2f}%\n"
+            analysis_text += f"- **最近一日涨幅**: {daily_change:+.2f}%\n" if isinstance(daily_change, (int, float)) else f"- **最近一日涨幅**: {daily_change}\n"
             analysis_text += f"- **当前价格**: ¥{current_price:.2f}\n" if isinstance(current_price, (int, float)) else f"- **当前价格**: {current_price}\n"
             analysis_text += f"- **ETF代码**: {etf}\n"
             analysis_text += f"- **数据日期**: {data_date}\n"

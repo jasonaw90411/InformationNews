@@ -513,16 +513,16 @@ def generate_summary_html(summary_text):
                         <div class="sub-tab-container">
                             <!-- 子Tab头部 -->
                             <div class="sub-tab-headers">
-                                <div class="sub-tab-header" onclick="switchSubTab('a_stocks')">A股板块及股票分析</div>
-                                <div class="sub-tab-header active" onclick="switchSubTab('us_stocks')">美股板块与股票分析</div>                             
+                                <div class="sub-tab-header active" onclick="switchSubTab('a_stocks')">A股板块及股票分析</div>
+                                <div class="sub-tab-header" onclick="switchSubTab('us_stocks')">美股板块与股票分析</div>                             
                             </div>
                             
                             <!-- 子Tab内容 -->
-                            <div id="us_stocks" class="sub-tab-content active">
-                                {us_stock_html}
-                            </div>
-                            <div id="a_stocks" class="sub-tab-content">
+                            <div id="a_stocks" class="sub-tab-content active">
                                 {a_stock_html}
+                            </div>
+                            <div id="us_stocks" class="sub-tab-content">
+                                {us_stock_html}
                             </div>
                         </div>
                     </div>
