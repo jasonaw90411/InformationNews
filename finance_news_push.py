@@ -16,7 +16,10 @@ import important_events_tracking
 # 从环境变量获取微信公众号配置
 appID = os.environ.get("APP_ID")
 appSecret = os.environ.get("APP_SECRET")
-openId = os.environ.get("OPEN_ID")
+# 支持多个openId，使用逗号分隔
+openId_str = os.environ.get("OPEN_ID")
+# 解析为列表，支持多个人推送
+openIds = [oid.strip() for oid in openId_str.split(',')] if openId_str else []
 template_id = os.environ.get("TEMPLATE_ID")
 
 # 选择使用的AI服务 (deepseek 或 alimind)
@@ -652,28 +655,34 @@ def send_news_to_wechat(access_token, news_content, summary_html_path):
             base_url = f"https://{parts[0]}.github.io/{parts[1]}/finance_summary.html"
             github_pages_url = f"{base_url}?t={timestamp}"
     
-    body = {
-        "touser": openId.strip(),
-        "template_id": template_id.strip(),
-        "url": github_pages_url,  # 使用GitHub Pages URL作为跳转链接
-        "data": {
-            "date": {
-                "value": f"{today_str} - {time_period}推送"
-            },
-            "content": {
-                "value": core_content
-            },
-            "remark": {
-                "value": f"{time_period}财经简报"  
+    # 向每个用户发送消息
+    results = []
+    for user_open_id in openIds:
+        if not user_open_id:  # 跳过空的openId
+            continue
+            
+        body = {
+            "touser": user_open_id.strip(),
+            "template_id": template_id.strip(),
+            "url": github_pages_url,  # 使用GitHub Pages URL作为跳转链接
+            "data": {
+                "date": {
+                    "value": f"{today_str} - {time_period}推送"
+                },
+                "content": {
+                    "value": core_content
+                },
+                "remark": {
+                    "value": f"{time_period}财经简报"  
+                }
             }
         }
-    }
+        
+        url = 'https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}'.format(access_token)
+        response = requests.post(url, json.dumps(body))
+        results.append(response.json())
     
-    
-    url = 'https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}'.format(access_token)
-    response = requests.post(url, json.dumps(body))
-    # 移除响应状态打印
-    return response.json()
+    return results
 
 
 
@@ -738,12 +747,19 @@ def news_report():
     summary_html_path = generate_summary_html(final_summary)  # 使用完整内容
     
     # 5. 发送消息到微信
-    response = send_news_to_wechat(access_token, final_summary, summary_html_path)
+    responses = send_news_to_wechat(access_token, final_summary, summary_html_path)
     
-    if response.get("errcode") == 0:
-        print(f"✅ {time_period}财经新闻推送成功")
+    success_count = 0
+    for i, response in enumerate(responses):
+        if response.get("errcode") == 0:
+            success_count += 1
+        else:
+            print(f"❌ 向用户 {i+1} 推送失败: {response}")
+    
+    if success_count > 0:
+        print(f"✅ {time_period}财经新闻推送成功，成功推送人数: {success_count}/{len(responses)}")
     else:
-        print(f"❌ {time_period}财经新闻推送失败: {response}")
+        print(f"❌ {time_period}财经新闻推送全部失败")
 
 if __name__ == '__main__':
     news_report()
