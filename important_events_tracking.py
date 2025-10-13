@@ -79,107 +79,148 @@ def get_important_meetings():
         
         # 尝试提取JSON部分
         try:
-            # 尝试直接解析
-            meetings = json.loads(content)
-            print(f"✅ 成功获取会议信息")
-            return format_meetings_markdown(meetings, current_time)
-        except json.JSONDecodeError as e:
-            print(f"⚠️ JSON解析失败，尝试清理响应内容: {str(e)}")
+            # 方法1: 清理内容并尝试直接解析
+            # 移除可能的Markdown代码块标记
+            clean_content = content.replace('```json', '').replace('```', '').strip()
             
-            # 方法1: 使用增强版正则表达式提取JSON部分
+            # 尝试直接解析
+            try:
+                meetings = json.loads(clean_content)
+                print(f"✅ 成功获取会议信息")
+                return format_meetings_markdown(meetings, current_time)
+            except json.JSONDecodeError as e:
+                print(f"⚠️ 直接JSON解析失败: {str(e)}")
+            
+            # 方法2: 智能提取JSON数组
             try:
                 import re
-                # 尝试匹配完整的JSON结构，包括嵌套的花括号和方括号
-                # 先尝试匹配数组
-                array_match = re.search(r'\[((?!\[|\]).|\[(?:(?!\[|\]).)*\]|\{(?:(?!\[|\]).)*\})*\]', content, re.DOTALL)
-                if array_match:
-                    json_content = array_match.group(0)
-                    print(f"📋 找到可能的JSON数组: {json_content[:100]}...")
+                # 查找JSON数组的开始和结束位置
+                if '[' in clean_content and ']' in clean_content:
+                    # 找到第一个[和最后一个]，确保包含整个数组
+                    start_idx = clean_content.find('[')
+                    end_idx = clean_content.rfind(']') + 1
+                    array_content = clean_content[start_idx:end_idx]
+                    print(f"📋 提取JSON数组内容: {array_content[:100]}...")
+                    
                     try:
-                        meetings = json.loads(json_content)
-                        print(f"✅ 成功通过正则表达式提取并解析JSON数组")
+                        meetings = json.loads(array_content)
+                        print(f"✅ 成功解析JSON数组")
                         return format_meetings_markdown(meetings, current_time)
-                    except Exception as inner_e:
-                        print(f"❌ JSON数组解析失败: {str(inner_e)}")
-                
-                # 如果数组匹配失败，尝试匹配对象
-                object_match = re.search(r'\{((?!\[|\]).|\[(?:(?!\[|\]).)*\]|\{(?:(?!\[|\]).)*\})*\}', content, re.DOTALL)
-                if object_match:
-                    json_content = object_match.group(0)
-                    print(f"📋 找到可能的JSON对象: {json_content[:100]}...")
-                    try:
-                        meetings = json.loads(json_content)
-                        print(f"✅ 成功通过正则表达式提取并解析JSON对象")
-                        return format_meetings_markdown(meetings, current_time)
-                    except Exception as inner_e:
-                        print(f"❌ JSON对象解析失败: {str(inner_e)}")
-                
-                print("❌ 未能通过正则表达式找到有效的JSON部分")
+                    except json.JSONDecodeError as e:
+                        print(f"❌ JSON数组解析失败: {str(e)}")
+                else:
+                    print("⚠️ 未找到JSON数组标记")
             except Exception as inner_e:
-                print(f"❌ 正则表达式提取失败: {str(inner_e)}")
+                print(f"❌ 数组提取失败: {str(inner_e)}")
             
-            # 方法2: 更智能的内容分割解析
+            # 方法3: 针对多行JSON对象的特殊处理
             try:
-                # 按换行符分割内容
-                lines = content.split('\n')
-                # 尝试找到以JSON开始和结束的行
-                json_start = -1
-                json_end = -1
+                print("🔄 尝试处理多行JSON对象...")
                 
-                for i, line in enumerate(lines):
-                    stripped_line = line.strip()
-                    if (stripped_line.startswith('{') or stripped_line.startswith('[')) and json_start == -1:
-                        json_start = i
-                    if (stripped_line.endswith('}') or stripped_line.endswith(']')) and json_start != -1:
-                        json_end = i
-                        break
+                # 按行分割内容
+                lines = clean_content.split('\n')
                 
-                if json_start != -1 and json_end != -1:
-                    json_content = '\n'.join(lines[json_start:json_end+1])
-                    print(f"📋 尝试解析可能的JSON块 (行 {json_start}-{json_end}): {json_content[:100]}...")
-                    try:
-                        meetings = json.loads(json_content)
-                        print(f"✅ 成功通过内容块分割解析JSON")
-                        return format_meetings_markdown(meetings, current_time)
-                    except Exception as inner_e:
-                        print(f"❌ 内容块解析失败: {str(inner_e)}")
+                # 检查是否有多个JSON对象（如错误信息所示）
+                if len(lines) > 1:
+                    # 尝试手动构建JSON数组
+                    json_objects = []
+                    current_object_lines = []
+                    brace_count = 0
+                    
+                    for line in lines:
+                        stripped_line = line.strip()
+                        if not stripped_line:  # 跳过空行
+                            continue
+                        
+                        # 跟踪花括号数量以识别完整的JSON对象
+                        current_object_lines.append(line)
+                        brace_count += stripped_line.count('{') - stripped_line.count('}')
+                        
+                        # 当花括号平衡时，尝试解析当前对象
+                        if brace_count == 0 and current_object_lines:
+                            try:
+                                object_str = '\n'.join(current_object_lines)
+                                # 移除可能的逗号
+                                object_str = object_str.rstrip(',')
+                                json_obj = json.loads(object_str)
+                                json_objects.append(json_obj)
+                                current_object_lines = []
+                                print(f"✅ 成功解析单个JSON对象: {json_obj.get('title', '')}")
+                            except json.JSONDecodeError:
+                                # 如果解析失败，继续累积行
+                                pass
+                    
+                    # 如果成功解析了多个对象
+                    if json_objects:
+                        print(f"✅ 成功构建包含{len(json_objects)}个对象的数组")
+                        return format_meetings_markdown(json_objects, current_time)
+            except Exception as inner_e:
+                print(f"❌ 多行JSON处理失败: {str(inner_e)}")
+            
+            # 方法4: 正则表达式提取单个JSON对象
+            try:
+                import re
+                # 尝试匹配JSON对象
+                json_pattern = r'\{[^}]*\}'
+                matches = re.findall(json_pattern, clean_content, re.DOTALL)
                 
-                # 兜底方案: 尝试解析每一部分
-                print("🔄 尝试逐行解析...")
-                for i in range(len(lines)):
-                    for j in range(i, len(lines)):
+                if matches:
+                    json_objects = []
+                    for match in matches:
                         try:
-                            partial_content = '\n'.join(lines[i:j+1])
-                            meetings = json.loads(partial_content)
-                            print(f"✅ 成功通过内容分割解析JSON (行 {i}-{j})")
-                            return format_meetings_markdown(meetings, current_time)
+                            # 修复可能的格式问题
+                            fixed_match = match.replace('\n', ' ').strip()
+                            json_obj = json.loads(fixed_match)
+                            json_objects.append(json_obj)
                         except json.JSONDecodeError:
                             continue
+                    
+                    if json_objects:
+                        print(f"✅ 通过正则表达式提取了{len(json_objects)}个JSON对象")
+                        return format_meetings_markdown(json_objects, current_time)
             except Exception as inner_e:
-                print(f"❌ 内容分割解析失败: {str(inner_e)}")
+                print(f"❌ 正则提取对象失败: {str(inner_e)}")
             
-            # 方法3: 清理非JSON内容的尝试
+            # 方法5: 最后的兜底方案 - 尝试直接从响应中提取结构化数据
             try:
-                print("🔄 尝试清理响应内容...")
-                # 移除可能的Markdown代码块标记
-                content = content.replace('```json', '').replace('```', '')
-                # 移除可能的前缀和后缀文本
-                if ('[' in content and ']' in content):
-                    start_idx = content.find('[')
-                    end_idx = content.rfind(']') + 1
-                    clean_content = content[start_idx:end_idx]
-                    print(f"📋 清理后的内容: {clean_content[:100]}...")
-                    try:
-                        meetings = json.loads(clean_content)
-                        print(f"✅ 成功通过内容清理解析JSON")
-                        return format_meetings_markdown(meetings, current_time)
-                    except Exception as inner_e:
-                        print(f"❌ 清理内容后解析失败: {str(inner_e)}")
+                print("🔄 尝试从响应中提取结构化数据...")
+                # 分割每一行，尝试提取键值对
+                meetings_data = []
+                current_meeting = {}
+                
+                for line in lines:
+                    stripped_line = line.strip()
+                    # 检查是否是新对象的开始
+                    if stripped_line.startswith('{'):
+                        current_meeting = {}
+                    # 检查键值对格式
+                    elif ':' in stripped_line and not stripped_line.startswith('//'):
+                        try:
+                            # 简单的键值对提取
+                            key_part, value_part = stripped_line.split(':', 1)
+                            key = key_part.strip().strip('"').strip("'")
+                            # 清理值
+                            value = value_part.strip().strip(',').strip('"').strip("'")
+                            current_meeting[key] = value
+                        except Exception:
+                            pass
+                    # 检查对象结束
+                    elif stripped_line.endswith('}'):
+                        if current_meeting:  # 只有当有数据时才添加
+                            meetings_data.append(current_meeting)
+                            current_meeting = {}
+                
+                if meetings_data:
+                    print(f"✅ 成功提取了{len(meetings_data)}个会议数据")
+                    return format_meetings_markdown(meetings_data, current_time)
             except Exception as inner_e:
-                print(f"❌ 内容清理失败: {str(inner_e)}")
+                print(f"❌ 结构化数据提取失败: {str(inner_e)}")
             
-            # 解析失败，直接抛出异常
-            raise ValueError(f"无法解析LLM响应内容: {str(e)}")
+            # 所有尝试都失败，抛出异常
+            raise ValueError(f"无法解析LLM响应内容，已尝试多种解析方法")
+        except Exception as e:
+            print(f"❌ 解析响应内容失败: {str(e)}")
+            raise
         
     except Exception as e:
         print(f"❌ 使用LLM获取会议信息失败: {str(e)}")
