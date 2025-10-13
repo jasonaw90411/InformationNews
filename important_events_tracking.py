@@ -13,12 +13,12 @@ def get_beijing_time():
 # 获取未来一个月的重点会议信息
 def get_important_meetings():
     """
-    使用LLM获取未来一个月重要的美国和中国经济政策会议信息
+    使用LLM获取未来二个月重要的美国和中国经济政策会议信息
     """
     try:
         print("🔄 正在使用LLM获取重要会议信息...")
         current_time = get_beijing_time()
-        one_month_later = current_time + timedelta(days=30)
+        two_month_later = current_time + timedelta(days=60)
         
         # 获取API密钥 - 使用阿里千问模型
         print("📋 检查环境变量配置...")
@@ -43,22 +43,23 @@ def get_important_meetings():
         
         # 构建提示词
         current_date = current_time.strftime("%Y-%m-%d")
-        one_month_date = one_month_later.strftime("%Y-%m-%d")
+        two_month_date = two_month_later.strftime("%Y-%m-%d")
         
-        prompt = f"""请列出从{current_date}到{one_month_date}期间，美国和中国重要的经济和政策会议及数据发布时间。
+        prompt = f"""请列出从{current_date}到{two_month_date}期间，美国和中国重要的经济和政策会议及数据发布时间。
 
 要求：
-1. 包含美联储FOMC会议、美国非农就业数据、CPI数据等重要经济指标发布时间
-2. 包含中国人民银行会议、中国重要经济数据(CPI、GDP等)发布时间
-3. 按照重要性分为"高"、"中高"两个级别
-4. 按照类别分为"国内政策"、"国际政策"、"经济数据"三个类别
-5. 返回JSON格式数据，包含以下字段：
+1.获取从{current_date}到未来二个月重要的美国和中国经济政策会议信息
+2. 包含美联储FOMC会议、美国非农就业数据、CPI数据等重要经济指标发布时间等
+3. 包含中国人民银行会议、中国重要经济数据(CPI、GDP等)发布时间
+4. 按照重要性分为"高"、"中高"两个级别
+5. 按照类别分为"国内政策"、"国际政策"、"经济数据"三个类别
+6. 返回JSON格式数据，包含以下字段：
    - date: 日期(YYYY-MM-DD格式)
    - title: 会议/数据发布标题
    - description: 详细描述
    - importance: 重要性级别("高"或"中高")
    - category: 类别("国内政策"、"国际政策"或"经济数据")
-6. 所有数据都要从官方的一些新闻渠道获得，不要瞎编杜撰。
+7. 所有数据都要从官方的一些新闻渠道获得，不要瞎编杜撰。
 
 请确保数据准确且时间合理，返回纯JSON格式，不要添加其他解释文字。"""
         
