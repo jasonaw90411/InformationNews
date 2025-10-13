@@ -20,28 +20,28 @@ def get_important_meetings():
         current_time = get_beijing_time()
         one_month_later = current_time + timedelta(days=30)
         
-        # 获取API密钥
-        api_key = os.getenv("DEEPSEEK_API_KEY") or os.getenv("ALI_MIND_API_KEY") or os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            print("⚠️ 未找到API密钥")
-            raise ValueError("API密钥未设置")
+        # 获取API密钥 - 参考 finance_news_push.py 配置
+        ai_service = os.environ.get("AI_SERVICE", "deepseek")
         
-        # 初始化OpenAI客户端 - 参考 finance_news_push.py 配置
-        ai_service = os.environ.get("AI_SERVICE", "alimind")
         if ai_service == "deepseek":
+            # DeepSeek API Key
+            api_key = os.environ.get("DEEPSEEK_API_KEY")
+            if not api_key:
+                raise ValueError("环境变量 DEEPSEEK_API_KEY 未设置!")
             api_base_url = "https://api.deepseek.com/v1"
             model_name = "deepseek-chat"
         elif ai_service == "alimind":
-            api_base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-            model_name = "qwen-turbo"
+            # 阿里千文API配置
+            api_key = os.environ.get("ALI_MIND_API_KEY")
+            if not api_key:
+                raise ValueError("环境变量 ALI_MIND_API_KEY 未设置!")
+            api_base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"  # 阿里千文兼容OpenAI接口的地址
+            model_name = "qwen-turbo"  # 阿里千文模型名称
         else:
-            api_base_url = None
-            model_name = "gpt-3.5-turbo"
+            raise ValueError(f"不支持的AI服务类型: {ai_service}")
         
-        if api_base_url:
-            client = OpenAI(api_key=api_key, base_url=api_base_url)
-        else:
-            client = OpenAI(api_key=api_key)
+        # 初始化OpenAI客户端
+        client = OpenAI(api_key=api_key, base_url=api_base_url)
         
         # 构建提示词
         current_date = current_time.strftime("%Y-%m-%d")
