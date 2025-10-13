@@ -3,6 +3,8 @@ import os
 import json
 from datetime import datetime, timedelta
 import pytz
+import openai
+from openai import OpenAI
 
 # 获取北京时间
 def get_beijing_time():
@@ -11,84 +13,138 @@ def get_beijing_time():
 # 获取未来一个月的重点会议信息
 def get_important_meetings():
     """
-    获取未来一个月重要的经济和政策会议信息
-    在实际应用中，这里可以对接真实的API或数据源
-    目前使用模拟数据
+    使用LLM获取未来一个月重要的美国和中国经济政策会议信息
     """
     try:
-        print("🔄 正在获取重要会议信息...")
+        print("🔄 正在使用LLM获取重要会议信息...")
         current_time = get_beijing_time()
         one_month_later = current_time + timedelta(days=30)
         
-        # 模拟会议数据 - 实际应用中可以从外部API获取
-        meetings = [
-            {
-                "date": (current_time + timedelta(days=2)).strftime("%Y-%m-%d"),
-                "title": "中国CPI/PPI数据公布",
-                "description": "国家统计局公布月度居民消费价格指数和工业生产者出厂价格指数",
-                "importance": "高",
-                "category": "经济数据"
-            },
-            {
-                "date": (current_time + timedelta(days=5)).strftime("%Y-%m-%d"),
-                "title": "美联储FOMC会议",
-                "description": "美联储公开市场委员会讨论货币政策，可能宣布利率决议",
-                "importance": "高",
-                "category": "国际政策"
-            },
-            {
-                "date": (current_time + timedelta(days=7)).strftime("%Y-%m-%d"),
-                "title": "中国人民银行货币政策委员会会议",
-                "description": "讨论当前货币政策和经济形势",
-                "importance": "中高",
-                "category": "国内政策"
-            },
-            {
-                "date": (current_time + timedelta(days=10)).strftime("%Y-%m-%d"),
-                "title": "美国非农就业报告",
-                "description": "美国劳工部公布月度非农就业数据，是重要的经济指标",
-                "importance": "高",
-                "category": "经济数据"
-            },
-            {
-                "date": (current_time + timedelta(days=15)).strftime("%Y-%m-%d"),
-                "title": "中国三中全会（模拟日期）",
-                "description": "讨论国家重要政策方向和经济改革措施",
-                "importance": "高",
-                "category": "国内政策"
-            },
-            {
-                "date": (current_time + timedelta(days=18)).strftime("%Y-%m-%d"),
-                "title": "欧盟央行利率决议",
-                "description": "欧洲中央银行宣布最新利率决议和货币政策立场",
-                "importance": "中高",
-                "category": "国际政策"
-            },
-            {
-                "date": (current_time + timedelta(days=22)).strftime("%Y-%m-%d"),
-                "title": "中国GDP季度数据公布",
-                "description": "国家统计局公布季度国内生产总值数据",
-                "importance": "高",
-                "category": "经济数据"
-            },
-            {
-                "date": (current_time + timedelta(days=25)).strftime("%Y-%m-%d"),
-                "title": "美国CPI数据公布",
-                "description": "美国劳工部公布月度消费者价格指数数据",
-                "importance": "高",
-                "category": "经济数据"
-            },
-            {
-                "date": (current_time + timedelta(days=28)).strftime("%Y-%m-%d"),
-                "title": "OPEC+部长级会议",
-                "description": "讨论石油产量政策和市场调节措施",
-                "importance": "中高",
-                "category": "国际政策"
-            }
-        ]
+        # 获取API密钥
+        api_key = os.getenv("DEEPSEEK_API_KEY") or os.getenv("ALI_MIND_API_KEY") or os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            print("⚠️ 未找到API密钥")
+            raise ValueError("API密钥未设置")
         
-        # 按日期排序会议
-        meetings.sort(key=lambda x: x["date"])
+        # 初始化OpenAI客户端 - 参考 finance_news_push.py 配置
+        ai_service = os.environ.get("AI_SERVICE", "alimind")
+        if ai_service == "deepseek":
+            api_base_url = "https://api.deepseek.com/v1"
+            model_name = "deepseek-chat"
+        elif ai_service == "alimind":
+            api_base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+            model_name = "qwen-turbo"
+        else:
+            api_base_url = None
+            model_name = "gpt-3.5-turbo"
+        
+        if api_base_url:
+            client = OpenAI(api_key=api_key, base_url=api_base_url)
+        else:
+            client = OpenAI(api_key=api_key)
+        
+        # 构建提示词
+        current_date = current_time.strftime("%Y-%m-%d")
+        one_month_date = one_month_later.strftime("%Y-%m-%d")
+        
+        prompt = f"""请列出从{current_date}到{one_month_date}期间，美国和中国重要的经济和政策会议及数据发布时间。
+
+要求：
+1. 包含美联储FOMC会议、美国非农就业数据、CPI数据等重要经济指标发布时间
+2. 包含中国人民银行会议、中国重要经济数据(CPI、GDP等)发布时间
+3. 按照重要性分为"高"、"中高"两个级别
+4. 按照类别分为"国内政策"、"国际政策"、"经济数据"三个类别
+5. 返回JSON格式数据，包含以下字段：
+   - date: 日期(YYYY-MM-DD格式)
+   - title: 会议/数据发布标题
+   - description: 详细描述
+   - importance: 重要性级别("高"或"中高")
+   - category: 类别("国内政策"、"国际政策"或"经济数据")
+
+请确保数据准确且时间合理，返回纯JSON格式，不要添加其他解释文字。"""
+        
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": "你是一个专业的金融分析师，熟悉中美两国的经济政策会议和数据发布时间表。"},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=2000
+        )
+        
+        # 解析响应，增强错误处理
+        content = response.choices[0].message.content.strip()
+        
+        # 尝试提取JSON部分
+        try:
+            # 尝试直接解析
+            meetings = json.loads(content)
+            print(f"✅ 成功获取会议信息")
+            return format_meetings_markdown(meetings, current_time)
+        except json.JSONDecodeError as e:
+            print(f"⚠️ JSON解析失败，尝试清理响应内容: {str(e)}")
+            # 尝试提取JSON部分（查找第一个{和最后一个}）
+            try:
+                start_idx = content.find('{')
+                end_idx = content.rfind('}') + 1
+                if start_idx != -1 and end_idx != 0:
+                    json_content = content[start_idx:end_idx]
+                    meetings = json.loads(json_content)
+                    print(f"✅ 成功从响应中提取并解析JSON部分")
+                    return format_meetings_markdown(meetings, current_time)
+                else:
+                    # 查找第一个[和最后一个]（数组格式）
+                    start_idx = content.find('[')
+                    end_idx = content.rfind(']') + 1
+                    if start_idx != -1 and end_idx != 0:
+                        json_content = content[start_idx:end_idx]
+                        meetings = json.loads(json_content)
+                        print(f"✅ 成功从响应中提取并解析JSON数组部分")
+                        return format_meetings_markdown(meetings, current_time)
+                    else:
+                        raise ValueError(f"无法从响应中提取有效JSON: {content[:100]}...")
+            except Exception as inner_e:
+                print(f"❌ 清理响应后仍解析失败: {str(inner_e)}")
+                # 不再使用模拟数据，直接抛出异常
+                raise ValueError(f"无法解析LLM响应内容: {str(inner_e)}")
+        
+    except Exception as e:
+        print(f"❌ 使用LLM获取会议信息失败: {str(e)}")
+        # 返回包含错误信息的基本报告
+        error_report = "# 📅 未来一个月重要经济与政策会议\n\n"
+        error_report += f"*数据更新时间: {get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')}*\n\n"
+        error_report += "### 📝 数据获取失败\n\n"
+        error_report += f"- 原因: {str(e)}\n"
+        error_report += "- 请检查API密钥配置或网络连接\n"
+        return error_report
+
+def format_meetings_markdown(meetings, current_time):
+    """
+    将会议数据格式化为Markdown格式
+    """
+    try:
+        # 检查meetings的类型并转换为列表格式
+        if isinstance(meetings, dict):
+            # 如果是字典格式，尝试提取其中的列表数据
+            # 查找可能包含会议列表的键
+            list_keys = [key for key in meetings.keys() if isinstance(meetings[key], list)]
+            if list_keys:
+                # 使用第一个找到的列表
+                meetings_list = meetings[list_keys[0]]
+                print(f"🔄 数据格式调整：从字典中提取列表数据（键: {list_keys[0]}）")
+            else:
+                # 如果字典中没有列表，尝试将字典本身作为单个会议项
+                meetings_list = [meetings]
+                print("🔄 数据格式调整：将字典转换为单元素列表")
+        elif isinstance(meetings, list):
+            meetings_list = meetings
+        else:
+            raise TypeError(f"不支持的数据类型: {type(meetings)}")
+        
+        # 按日期排序会议（如果有date字段）
+        if meetings_list and "date" in meetings_list[0]:
+            meetings_list.sort(key=lambda x: x["date"])
         
         # 生成Markdown格式的会议列表
         markdown_content = "# 📅 未来一个月重要经济与政策会议\n\n"
@@ -96,28 +152,51 @@ def get_important_meetings():
         
         # 按类别分组显示会议
         categories = {"国内政策": [], "国际政策": [], "经济数据": []}
-        for meeting in meetings:
+        
+        for meeting in meetings_list:
+            # 检查是否有必要的字段
+            if not all(key in meeting for key in ["title", "description"]):
+                # 如果缺少必要字段，尝试使用默认值或跳过
+                if "title" not in meeting:
+                    meeting["title"] = "未命名会议"
+                if "description" not in meeting:
+                    meeting["description"] = "无描述"
+                if "importance" not in meeting:
+                    meeting["importance"] = "中高"
+                if "category" not in meeting:
+                    meeting["category"] = "经济数据"
+            
             category = meeting["category"]
             if category in categories:
                 categories[category].append(meeting)
+            else:
+                # 对于未识别的类别，默认归类为经济数据
+                categories["经济数据"].append(meeting)
         
         # 为每个类别生成内容
+        has_content = False
         for category_name, category_meetings in categories.items():
             if category_meetings:
+                has_content = True
                 markdown_content += f"## {category_name}\n\n"
                 for meeting in category_meetings:
                     # 根据重要性添加标记
                     importance_marker = "🔴 " if meeting["importance"] == "高" else "🟠 "
-                    markdown_content += f"### {importance_marker}{meeting['date']} - {meeting['title']}\n"
+                    # 确保date字段存在
+                    date = meeting.get("date", "日期未知")
+                    markdown_content += f"### {importance_marker}{date} - {meeting['title']}\n"
                     markdown_content += f"- **重要性**: {meeting['importance']}\n"
                     markdown_content += f"- **描述**: {meeting['description']}\n\n"
         
-        print("✅ 重要会议信息获取成功")
+        if not has_content:
+            markdown_content += "### 📝 暂无会议数据\n\n"
+            markdown_content += "- 当前暂无可用的会议数据或数据格式不兼容\n"
+        
+        print(f"✅ 重要会议信息获取成功，共{len(meetings_list)}个会议")
         return markdown_content
     except Exception as e:
-        print(f"❌ 获取重要会议信息失败: {str(e)}")
-        # 返回错误信息
-        return "# 📅 未来一个月重要经济与政策会议\n\n获取会议信息失败，请稍后重试。"
+        print(f"❌ 格式化会议信息失败: {str(e)}")
+        return "# 📅 未来一个月重要经济与政策会议\n\n格式化会议信息失败: " + str(e)
 
 # 生成完整的事件追踪报告
 def generate_events_tracking_report():
@@ -140,14 +219,15 @@ def generate_events_tracking_report():
         print(f"❌ 生成事件追踪报告失败: {str(e)}")
         return "## 📊 重要事件追踪\n\n生成报告失败，请稍后重试。"
 
-# 测试函数
-def test_events_tracking():
-    """
-    测试事件追踪功能
-    """
-    report = generate_events_tracking_report()
-    print("\n=== 事件追踪报告测试 ===")
-    print(report[:500] + "..." if len(report) > 500 else report)
+
+
 
 if __name__ == "__main__":
-    test_events_tracking()
+    # 执行测试
+    print("=== 运行重要事件追踪测试 ===")
+    try:
+        # 生成并显示事件追踪报告
+        report = generate_events_tracking_report()
+        print(report[:500] + "..." if len(report) > 500 else report)
+    except Exception as e:
+        print(f"测试执行失败: {str(e)}")
