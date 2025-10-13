@@ -84,30 +84,48 @@ def get_important_meetings():
             return format_meetings_markdown(meetings, current_time)
         except json.JSONDecodeError as e:
             print(f"⚠️ JSON解析失败，尝试清理响应内容: {str(e)}")
-            # 尝试提取JSON部分（查找第一个{和最后一个}）
+            
+            # 方法1: 使用正则表达式提取JSON部分
             try:
-                start_idx = content.find('{')
-                end_idx = content.rfind('}') + 1
-                if start_idx != -1 and end_idx != 0:
-                    json_content = content[start_idx:end_idx]
+                import re
+                # 尝试匹配花括号JSON对象
+                json_match = re.search(r'\{[^}]*\}', content, re.DOTALL)
+                if not json_match:
+                    # 尝试匹配方括号JSON数组
+                    json_match = re.search(r'\[[^\]]*\]', content, re.DOTALL)
+                
+                if json_match:
+                    json_content = json_match.group(0)
                     meetings = json.loads(json_content)
-                    print(f"✅ 成功从响应中提取并解析JSON部分")
+                    print(f"✅ 成功通过正则表达式提取并解析JSON")
                     return format_meetings_markdown(meetings, current_time)
                 else:
-                    # 查找第一个[和最后一个]（数组格式）
-                    start_idx = content.find('[')
-                    end_idx = content.rfind(']') + 1
-                    if start_idx != -1 and end_idx != 0:
-                        json_content = content[start_idx:end_idx]
-                        meetings = json.loads(json_content)
-                        print(f"✅ 成功从响应中提取并解析JSON数组部分")
-                        return format_meetings_markdown(meetings, current_time)
-                    else:
-                        raise ValueError(f"无法从响应中提取有效JSON: {content[:100]}...")
+                    print("❌ 未能通过正则表达式找到JSON部分")
             except Exception as inner_e:
-                print(f"❌ 清理响应后仍解析失败: {str(inner_e)}")
-                # 不再使用模拟数据，直接抛出异常
-                raise ValueError(f"无法解析LLM响应内容: {str(inner_e)}")
+                print(f"❌ 正则表达式提取失败: {str(inner_e)}")
+            
+            # 方法2: 分割响应内容并尝试解析每一部分
+            try:
+                # 按换行符分割内容
+                lines = content.split('\n')
+                for i in range(len(lines)):
+                    # 尝试从每一行开始解析
+                    for j in range(i, len(lines)):
+                        try:
+                            partial_content = '\n'.join(lines[i:j+1])
+                            meetings = json.loads(partial_content)
+                            print(f"✅ 成功通过内容分割解析JSON")
+                            return format_meetings_markdown(meetings, current_time)
+                        except json.JSONDecodeError:
+                            continue
+            except Exception as inner_e:
+                print(f"❌ 内容分割解析失败: {str(inner_e)}")
+            
+            # 打印原始响应的前200个字符用于调试
+            print(f"原始响应内容前200字符: {content[:200]}...")
+            
+            # 解析失败，直接抛出异常
+            raise ValueError(f"无法解析LLM响应内容: {str(e)}")
         
     except Exception as e:
         print(f"❌ 使用LLM获取会议信息失败: {str(e)}")
