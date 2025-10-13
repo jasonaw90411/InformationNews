@@ -20,28 +20,26 @@ def get_important_meetings():
         current_time = get_beijing_time()
         one_month_later = current_time + timedelta(days=30)
         
-        # 获取API密钥 - 参考 finance_news_push.py 配置
-        ai_service = os.environ.get("AI_SERVICE", "deepseek")
+        # 获取API密钥 - 使用阿里千问模型
+        print("📋 检查环境变量配置...")
         
-        if ai_service == "deepseek":
-            # DeepSeek API Key
-            api_key = os.environ.get("DEEPSEEK_API_KEY")
-            if not api_key:
-                raise ValueError("环境变量 DEEPSEEK_API_KEY 未设置!")
-            api_base_url = "https://api.deepseek.com/v1"
-            model_name = "deepseek-chat"
-        elif ai_service == "alimind":
-            # 阿里千文API配置
-            api_key = os.environ.get("ALI_MIND_API_KEY")
-            if not api_key:
-                raise ValueError("环境变量 ALI_MIND_API_KEY 未设置!")
-            api_base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"  # 阿里千文兼容OpenAI接口的地址
-            model_name = "qwen-turbo"  # 阿里千文模型名称
-        else:
-            raise ValueError(f"不支持的AI服务类型: {ai_service}")
+        # 只使用阿里千问模型
+        ai_service = "alimind"
+        api_key = os.environ.get("ALI_MIND_API_KEY")
+        print(f"  ALI_MIND_API_KEY: {'已设置 (长度: ' + str(len(api_key)) + ')' if api_key else '未设置'}")
+        
+        if not api_key:
+            raise ValueError("环境变量 ALI_MIND_API_KEY 未设置!")
+            
+        api_base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        model_name = "qwen-turbo"
+        
+        print(f"  API服务配置: 服务={ai_service}, 模型={model_name}, 基础URL={api_base_url}")
         
         # 初始化OpenAI客户端
+        print("🔄 初始化OpenAI客户端...")
         client = OpenAI(api_key=api_key, base_url=api_base_url)
+        print("✅ 客户端初始化完成")
         
         # 构建提示词
         current_date = current_time.strftime("%Y-%m-%d")
@@ -76,6 +74,9 @@ def get_important_meetings():
         # 解析响应，增强错误处理
         content = response.choices[0].message.content.strip()
         
+        # 打印完整响应内容用于调试
+        print(f"完整响应内容:\n{content}")
+        
         # 尝试提取JSON部分
         try:
             # 尝试直接解析
@@ -85,44 +86,97 @@ def get_important_meetings():
         except json.JSONDecodeError as e:
             print(f"⚠️ JSON解析失败，尝试清理响应内容: {str(e)}")
             
-            # 方法1: 使用正则表达式提取JSON部分
+            # 方法1: 使用增强版正则表达式提取JSON部分
             try:
                 import re
-                # 尝试匹配花括号JSON对象
-                json_match = re.search(r'\{[^}]*\}', content, re.DOTALL)
-                if not json_match:
-                    # 尝试匹配方括号JSON数组
-                    json_match = re.search(r'\[[^\]]*\]', content, re.DOTALL)
+                # 尝试匹配完整的JSON结构，包括嵌套的花括号和方括号
+                # 先尝试匹配数组
+                array_match = re.search(r'\[((?!\[|\]).|\[(?:(?!\[|\]).)*\]|\{(?:(?!\[|\]).)*\})*\]', content, re.DOTALL)
+                if array_match:
+                    json_content = array_match.group(0)
+                    print(f"📋 找到可能的JSON数组: {json_content[:100]}...")
+                    try:
+                        meetings = json.loads(json_content)
+                        print(f"✅ 成功通过正则表达式提取并解析JSON数组")
+                        return format_meetings_markdown(meetings, current_time)
+                    except Exception as inner_e:
+                        print(f"❌ JSON数组解析失败: {str(inner_e)}")
                 
-                if json_match:
-                    json_content = json_match.group(0)
-                    meetings = json.loads(json_content)
-                    print(f"✅ 成功通过正则表达式提取并解析JSON")
-                    return format_meetings_markdown(meetings, current_time)
-                else:
-                    print("❌ 未能通过正则表达式找到JSON部分")
+                # 如果数组匹配失败，尝试匹配对象
+                object_match = re.search(r'\{((?!\[|\]).|\[(?:(?!\[|\]).)*\]|\{(?:(?!\[|\]).)*\})*\}', content, re.DOTALL)
+                if object_match:
+                    json_content = object_match.group(0)
+                    print(f"📋 找到可能的JSON对象: {json_content[:100]}...")
+                    try:
+                        meetings = json.loads(json_content)
+                        print(f"✅ 成功通过正则表达式提取并解析JSON对象")
+                        return format_meetings_markdown(meetings, current_time)
+                    except Exception as inner_e:
+                        print(f"❌ JSON对象解析失败: {str(inner_e)}")
+                
+                print("❌ 未能通过正则表达式找到有效的JSON部分")
             except Exception as inner_e:
                 print(f"❌ 正则表达式提取失败: {str(inner_e)}")
             
-            # 方法2: 分割响应内容并尝试解析每一部分
+            # 方法2: 更智能的内容分割解析
             try:
                 # 按换行符分割内容
                 lines = content.split('\n')
+                # 尝试找到以JSON开始和结束的行
+                json_start = -1
+                json_end = -1
+                
+                for i, line in enumerate(lines):
+                    stripped_line = line.strip()
+                    if (stripped_line.startswith('{') or stripped_line.startswith('[')) and json_start == -1:
+                        json_start = i
+                    if (stripped_line.endswith('}') or stripped_line.endswith(']')) and json_start != -1:
+                        json_end = i
+                        break
+                
+                if json_start != -1 and json_end != -1:
+                    json_content = '\n'.join(lines[json_start:json_end+1])
+                    print(f"📋 尝试解析可能的JSON块 (行 {json_start}-{json_end}): {json_content[:100]}...")
+                    try:
+                        meetings = json.loads(json_content)
+                        print(f"✅ 成功通过内容块分割解析JSON")
+                        return format_meetings_markdown(meetings, current_time)
+                    except Exception as inner_e:
+                        print(f"❌ 内容块解析失败: {str(inner_e)}")
+                
+                # 兜底方案: 尝试解析每一部分
+                print("🔄 尝试逐行解析...")
                 for i in range(len(lines)):
-                    # 尝试从每一行开始解析
                     for j in range(i, len(lines)):
                         try:
                             partial_content = '\n'.join(lines[i:j+1])
                             meetings = json.loads(partial_content)
-                            print(f"✅ 成功通过内容分割解析JSON")
+                            print(f"✅ 成功通过内容分割解析JSON (行 {i}-{j})")
                             return format_meetings_markdown(meetings, current_time)
                         except json.JSONDecodeError:
                             continue
             except Exception as inner_e:
                 print(f"❌ 内容分割解析失败: {str(inner_e)}")
             
-            # 打印原始响应的前200个字符用于调试
-            print(f"原始响应内容前200字符: {content[:200]}...")
+            # 方法3: 清理非JSON内容的尝试
+            try:
+                print("🔄 尝试清理响应内容...")
+                # 移除可能的Markdown代码块标记
+                content = content.replace('```json', '').replace('```', '')
+                # 移除可能的前缀和后缀文本
+                if ('[' in content and ']' in content):
+                    start_idx = content.find('[')
+                    end_idx = content.rfind(']') + 1
+                    clean_content = content[start_idx:end_idx]
+                    print(f"📋 清理后的内容: {clean_content[:100]}...")
+                    try:
+                        meetings = json.loads(clean_content)
+                        print(f"✅ 成功通过内容清理解析JSON")
+                        return format_meetings_markdown(meetings, current_time)
+                    except Exception as inner_e:
+                        print(f"❌ 清理内容后解析失败: {str(inner_e)}")
+            except Exception as inner_e:
+                print(f"❌ 内容清理失败: {str(inner_e)}")
             
             # 解析失败，直接抛出异常
             raise ValueError(f"无法解析LLM响应内容: {str(e)}")
