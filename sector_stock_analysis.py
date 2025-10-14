@@ -218,15 +218,7 @@ def filter_popular_stocks(sector_trends):
                 # 每个板块选择2只股票
                 selected_stocks.extend(popular_stocks[sector_name][:2])
     
-    # 如果没有足够的股票，添加一些默认股票
-    if len(selected_stocks) < 8:  # 调整目标数量为8
-        default_stocks = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'JPM', 'JNJ']  # 增加默认股票数量
-        for stock in default_stocks:
-            if stock not in selected_stocks:
-                selected_stocks.append(stock)
-            if len(selected_stocks) >= 8:  # 目标数量为8
-                break
-    
+    # 直接返回筛选到的股票，不再强制补充到8个
     return selected_stocks
 
 # 筛选A股质量股票
@@ -239,21 +231,27 @@ def filter_quality_a_stocks(stocks):
             # 如果已经包含交易所后缀，则直接使用
             if any(suffix in stock for suffix in ['.SS', '.SZ', '.HK']):
                 stock_code = stock
-                # 尝试从代码映射表中反查股票名称
+                # 尝试查找准确的股票名称
+                # 遍历所有股票查找对应的名称
                 stock_name = stock
-                # 创建一个反向映射表，从代码到名称
-                code_to_name = {code: name for name, code in get_a_stock_code.__globals__.get('stock_mapping', {}).items()}
-                if stock_code in code_to_name:
-                    stock_name = code_to_name[stock_code]
+                global stock_data
+                if stock_data is not None:
+                    for sector, sector_data in stock_data.get('popular_stocks_by_sector', {}).items():
+                        for s in sector_data.get('stocks', []):
+                            if s.get('code') == stock_code:
+                                stock_name = s.get('name')
+                                break
+                        if stock_name != stock:
+                            break
             else:
-                # 如果是股票名称，使用get_a_stock_code函数获取正确的代码
-                stock_name = stock
-                stock_code = get_a_stock_code(stock_name)
-                
-                # 如果无法获取代码，跳过或使用备用逻辑
-                if not stock_code:
-                    print(f"警告: 无法获取 {stock_name} 的股票代码")
+                # 如果是股票名称，使用get_a_stock_info函数获取正确的代码和名称
+                stock_info = get_a_stock_info(stock)
+                if not stock_info:
+                    print(f"警告: 无法获取 {stock} 的股票信息")
                     continue
+                
+                stock_code = stock_info[0]
+                stock_name = stock_info[1]  # 使用JSON中定义的精确股票名称
             
             # 使用get_stock_data函数获取A股数据
             stock_data = get_stock_data(stock_code)
@@ -300,7 +298,7 @@ def filter_quality_a_stocks(stocks):
                 # 构建股票信息字典
                 stock_info = {
                     'symbol': stock_code,
-                    'name': stock_name,
+                    'name': stock_name,  # 使用JSON中定义的精确股票名称
                     'pe_ratio': pe_ratio if pe_ratio > 0 else None,  # 只记录有效的PE值
                     'profit_margin': profit_margin if profit_margin > 0 else None,  # 只记录有效的利润率
                     'current_price': current_price,
@@ -316,7 +314,7 @@ def filter_quality_a_stocks(stocks):
                 
                 stock_info = {
                     'symbol': stock_code,
-                    'name': stock_name,
+                    'name': stock_name,  # 使用JSON中定义的精确股票名称
                     'pe_ratio': pe_ratio if pe_ratio > 0 else None,
                     'profit_margin': profit_margin if profit_margin > 0 else None,
                     'current_price': current_price,
@@ -447,7 +445,7 @@ def analyze_with_llm(sector_data, stock_data):
     completion = openai_client.chat.completions.create(
         model=model_name,
         messages=[
-            {"role": "system", "content": "你是一位经验丰富的金融分析师，专注于股票市场和板块分析。请基于提供的数据，给出专业、客观、深入的分析和建议。特别重要：在进行技术分析,当前股价,推荐个股时，所有数据都要严格以{stock_data}为基准,不能自行修改,估算或使用其他价格来源"},
+            {"role": "system", "content": "你是一位经验丰富的金融分析师，专注于股票市场和板块分析。请基于提供的数据，给出专业、客观、深入的分析和建议。特别重要：在进行技术分析,当前股价,推荐个股时，所有数据都要严格以{stock_data}为基准,不能自行修改,估算或使用其他价格来源。在推荐股票时，必须严格使用提供的确切股票名称和代码，不得使用任何别名或替代名称。"},
             {"role": "user", "content": prompt.format(sector_data=sector_data, stock_data=stock_data)}
         ]
     )
@@ -529,25 +527,35 @@ def get_top_a_sectors():
         # 这里为了保持兼容性，返回空列表，但实际应用中应该处理这种情况
         return []
 
-# 智能获取A股股票代码
-def get_a_stock_code(stock_name):
+# 智能获取A股股票信息
+def get_a_stock_info(stock_name):
     """
-    根据股票名称获取对应的A股代码（含交易所后缀）
-    从popular_stocks_by_sector中查找代码，不再使用单独的stock_code_mapping
+    根据股票名称获取对应的A股信息（代码和名称）
+    从popular_stocks_by_sector中查找，不再使用单独的stock_code_mapping
+    返回格式: (股票代码, 股票名称) 或 None
     """
     global stock_data
     # 确保股票数据已加载
     if stock_data is None:
         load_stock_data()
     
-    # 遍历所有板块查找股票代码
+    # 遍历所有板块查找股票信息
     for sector, sector_data in stock_data.get('popular_stocks_by_sector', {}).items():
         for stock in sector_data.get('stocks', []):
             if stock.get('name') == stock_name:
-                return stock.get('code')
+                return (stock.get('code'), stock.get('name'))
     
     # 如果找不到，返回None
     return None
+
+# 为保持向后兼容性，保留原函数但调用新函数
+def get_a_stock_code(stock_name):
+    """
+    根据股票名称获取对应的A股代码（含交易所后缀）
+    此为兼容函数，调用get_a_stock_info实现
+    """
+    stock_info = get_a_stock_info(stock_name)
+    return stock_info[0] if stock_info else None
 
 # 筛选热门A股
 def filter_popular_a_stocks(sector_trends):
@@ -572,33 +580,15 @@ def filter_popular_a_stocks(sector_trends):
         for sector in sorted_sectors[:4]:  # 选择表现最好的4个板块
             sector_name = sector['name']
             if sector_name in popular_stocks:
-                # 每个板块选择2只股票，并直接从新结构获取代码
+                # 每个板块选择2只股票，并直接从新结构获取代码和名称
                 for stock in popular_stocks[sector_name].get('stocks', [])[:2]:
-                    stock_name = stock.get('name')
                     stock_code = stock.get('code')
                     if stock_code:
                         selected_stocks.append(stock_code)
                     else:
-                        print(f"警告: 无法获取 {stock_name} 的股票代码")
-                        # 如果无法获取代码，仍然添加股票名称作为备选
-                        selected_stocks.append(stock_name)
+                        print(f"警告: 股票数据中缺少代码信息")
     
-    # 如果没有足够的股票，添加一些默认股票
-    if len(selected_stocks) < 8:  # 调整目标数量为8
-        default_stocks = ['贵州茅台', '宁德时代', '比亚迪', '中芯国际', '招商银行', '恒瑞医药', '隆基绿能', '韦尔股份']  # 增加默认股票数量
-        for stock_name in default_stocks:
-            # 检查是否已存在
-            if stock_name not in selected_stocks:
-                # 尝试获取股票代码
-                stock_code = get_a_stock_code(stock_name)
-                if stock_code:
-                    selected_stocks.append(stock_code)
-                else:
-                    selected_stocks.append(stock_name)
-                
-                if len(selected_stocks) >= 8:  # 目标数量为8
-                    break
-    
+    # 如果选中的股票不足8个，就保持原样返回，不再添加默认股票
     return selected_stocks
 
 # 生成A股板块和股票分析报告
@@ -615,12 +605,19 @@ def generate_a_stock_report():
         print("🔄 正在筛选热门A股...")
         popular_a_stocks = filter_popular_a_stocks(a_sectors)
         
+        # 如果没有股票，不直接返回错误，而是记录警告并继续
         if not popular_a_stocks:
-            return "无法筛选出符合条件的A股"
+            print("⚠️  警告: 未筛选出热门A股")
+            return "未筛选出热门A股"
 
          # 筛选质量股票
         print("🔄 正在筛选质量股票...")
         quality_a_stocks = filter_quality_a_stocks(popular_a_stocks)
+        
+        # 如果没有质量股票，不直接返回错误
+        if not quality_a_stocks:
+            print("⚠️  警告: 未筛选出质量A股")
+            return "未筛选出质量A股"
         
         # 准备分析数据
         sector_analysis = analyze_sector_trends(a_sectors)
@@ -630,8 +627,8 @@ def generate_a_stock_report():
         for stock in quality_a_stocks:  
             stock_data_text += f"## {stock['symbol']} - {stock['name']}\n"
             stock_data_text += f"- 当前股价: ¥{stock['current_price']:.2f}\n"
-            stock_data_text += f"- 市盈率: {stock['pe_ratio']:.2f}\n"
-            stock_data_text += f"- 利润率: {stock['profit_margin']:.2f}%\n"
+            stock_data_text += f"- 市盈率: {stock['pe_ratio']:.2f}\n" if stock['pe_ratio'] else "- 市盈率: 数据缺失\n"
+            stock_data_text += f"- 利润率: {stock['profit_margin']:.2f}%\n" if stock['profit_margin'] else "- 利润率: 数据缺失\n"
             stock_data_text += f"- 近5日表现: {stock['recent_performance']:+.2f}%\n\n"
         
         # 使用LLM进行综合分析
@@ -661,8 +658,10 @@ def generate_us_stock_report():
         print("🔄 正在筛选质量股票...")
         quality_stocks = filter_quality_stocks(popular_stocks)
         
+        # 如果没有质量股票，不直接返回错误，而是记录警告
         if not quality_stocks:
-            return "无法筛选出符合条件的股票"
+            print("⚠️  警告: 未筛选出质量美股")
+            return "未筛选出质量美股"
         
         # 准备分析数据
         sector_analysis = analyze_sector_trends(us_sectors)
@@ -672,8 +671,8 @@ def generate_us_stock_report():
         for stock in quality_stocks:
             stock_data_text += f"## {stock['symbol']} - {stock['name']}\n"
             stock_data_text += f"- 当前股价: ${stock['current_price']:.2f}\n"
-            stock_data_text += f"- 市盈率: {stock['pe_ratio']:.2f}\n"
-            stock_data_text += f"- 利润率: {stock['profit_margin']:.2f}%\n"
+            stock_data_text += f"- 市盈率: {stock['pe_ratio']:.2f}\n" if stock['pe_ratio'] else "- 市盈率: 数据缺失\n"
+            stock_data_text += f"- 利润率: {stock['profit_margin']:.2f}%\n" if stock['profit_margin'] else "- 利润率: 数据缺失\n"
             stock_data_text += f"- 近5日表现: +{stock['recent_performance']:.2f}%\n\n"
         
         # 使用LLM进行综合分析
