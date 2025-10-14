@@ -219,45 +219,9 @@ def generate_summary_html(summary_text):
         us_stock_content = ""
         a_stock_content = ""
     
-    # 转换各部分内容为HTML
-    finance_html = convert_markdown_to_html(finance_content)
-    us_stock_html = convert_markdown_to_html(us_stock_content)
-    a_stock_html = convert_markdown_to_html(a_stock_content)
-    events_html = convert_markdown_to_html(events_content)
-    
-    # 生成HTML内容，包含Tab切换功能
-    html_content = f'''
+    # 转换标题函数
+    def convert_markdown_to_html(content):
         formatted = content
-        
-        # 处理A股市场活跃度样式 - 加粗字体和颜色
-        a_stock_activity_pattern = r'\*\*A股市场活跃度：\*\*(.+?)(?:\n|<br>|$)'
-        def replace_a_stock_activity(match):
-            activity_text = match.group(1).strip()
-            if '活跃' in activity_text:
-                return f'<span class="market-activity activity-hot"><strong>**A股市场活跃度：**{activity_text}</strong></span>'
-            elif '中性' in activity_text:
-                return f'<span class="market-activity activity-neutral"><strong>**A股市场活跃度：**{activity_text}</strong></span>'
-            elif '冷淡' in activity_text:
-                return f'<span class="market-activity activity-cold"><strong>**A股市场活跃度：**{activity_text}</strong></span>'
-            else:
-                return f'<span class="market-activity"><strong>**A股市场活跃度：**{activity_text}</strong></span>'
-        
-        formatted = re.sub(a_stock_activity_pattern, replace_a_stock_activity, formatted)
-        
-        # 处理美股市场活跃度样式 - 加粗字体和颜色
-        us_stock_activity_pattern = r'\*\*美股市场活跃度：\*\*(.+?)(?:\n|<br>|$)'
-        def replace_us_stock_activity(match):
-            activity_text = match.group(1).strip()
-            if '活跃' in activity_text:
-                return f'<span class="market-activity activity-hot"><strong>**美股市场活跃度：**{activity_text}</strong></span>'
-            elif '中性' in activity_text:
-                return f'<span class="market-activity activity-neutral"><strong>**美股市场活跃度：**{activity_text}</strong></span>'
-            elif '冷淡' in activity_text:
-                return f'<span class="market-activity activity-cold"><strong>**美股市场活跃度：**{activity_text}</strong></span>'
-            else:
-                return f'<span class="market-activity"><strong>**美股市场活跃度：**{activity_text}</strong></span>'
-        
-        formatted = re.sub(us_stock_activity_pattern, replace_us_stock_activity, formatted)
         
         # 转换标题
         formatted = formatted.replace('\n# ', '\n<h1>')
@@ -361,34 +325,6 @@ def generate_summary_html(summary_text):
             strong {{
                 color: #e74c3c;
                 font-weight: 600;
-            }}
-            
-            /* 市场活跃度样式 */
-            .market-activity {{
-                display: inline-block;
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-weight: bold;
-                margin: 5px 0;
-                font-size: 14px;
-            }}
-            
-            .market-activity.activity-hot {{
-                background-color: #ffebee;
-                color: #c62828;
-                border: 1px solid #ef5350;
-            }}
-            
-            .market-activity.activity-neutral {{
-                background-color: #fff3e0;
-                color: #ef6c00;
-                border: 1px solid #ffa726;
-            }}
-            
-            .market-activity.activity-cold {{
-                background-color: #f3e5f5;
-                color: #6a1b9a;
-                border: 1px solid #ab47bc;
             }}
             
             /* 链接样式 */
@@ -549,6 +485,55 @@ def generate_summary_html(summary_text):
                     padding: 15px 10px;
                 }}
             }}
+            
+            /* 市场情绪颜色样式 */
+            .sentiment-positive {{
+                color: #27ae60 !important;
+                font-weight: bold;
+                background-color: #e8f5e8;
+                padding: 2px 6px;
+                border-radius: 4px;
+            }}
+            
+            .sentiment-neutral {{
+                color: #f39c12 !important;
+                font-weight: bold;
+                background-color: #fef9e7;
+                padding: 2px 6px;
+                border-radius: 4px;
+            }}
+            
+            .sentiment-negative {{
+                color: #e74c3c !important;
+                font-weight: bold;
+                background-color: #fadbd8;
+                padding: 2px 6px;
+                border-radius: 4px;
+            }}
+            
+            .activity-active {{
+                color: #8e44ad !important;
+                font-weight: bold;
+                background-color: #f4ecf7;
+                padding: 2px 6px;
+                border-radius: 4px;
+            }}
+            
+            .activity-neutral {{
+                color: #34495e !important;
+                font-weight: bold;
+                background-color: #ecf0f1;
+                padding: 2px 6px;
+                border-radius: 4px;
+            }}
+            
+            .activity-cold {{
+                color: #7f8c8d !important;
+                font-weight: bold;
+                background-color: #f8f9fa;
+                padding: 2px 6px;
+                border-radius: 4px;
+            }}
         </style>
     </head>
     <body>
@@ -643,6 +628,9 @@ def generate_summary_html(summary_text):
                 // 处理iOS Safari上的滚动问题
                 document.body.style.webkitOverflowScrolling = 'touch';
                 
+                // 为市场情绪添加颜色样式
+                addSentimentColors();
+                
                 // 防止缓存
                 window.onpageshow = function(event) {{
                     if (event.persisted) {{
@@ -650,6 +638,51 @@ def generate_summary_html(summary_text):
                     }}
                 }};
             }});
+            
+            // 为市场情绪文本添加颜色样式
+            function addSentimentColors() {{
+                // 获取所有包含市场情绪的文本
+                const elements = document.querySelectorAll('.summary-body');
+                
+                elements.forEach(element => {{
+                    let html = element.innerHTML;
+                    
+                    // 处理A股情绪
+                    html = html.replace(/【A股情绪】([^<]*)/g, function(match, content) {{
+                        if (content.includes('积极')) {{
+                            return '<span class="sentiment-positive">【A股情绪】' + content + '</span>';
+                        }} else if (content.includes('消极')) {{
+                            return '<span class="sentiment-negative">【A股情绪】' + content + '</span>';
+                        }} else {{
+                            return '<span class="sentiment-neutral">【A股情绪】' + content + '</span>';
+                        }}
+                    }});
+                    
+                    // 处理美股情绪
+                    html = html.replace(/【美股情绪】([^<]*)/g, function(match, content) {{
+                        if (content.includes('积极')) {{
+                            return '<span class="sentiment-positive">【美股情绪】' + content + '</span>';
+                        }} else if (content.includes('消极')) {{
+                            return '<span class="sentiment-negative">【美股情绪】' + content + '</span>';
+                        }} else {{
+                            return '<span class="sentiment-neutral">【美股情绪】' + content + '</span>';
+                        }}
+                    }});
+                    
+                    // 处理整体活跃度
+                    html = html.replace(/【整体活跃度】([^<]*)/g, function(match, content) {{
+                        if (content.includes('活跃')) {{
+                            return '<span class="activity-active">【整体活跃度】' + content + '</span>';
+                        }} else if (content.includes('冷淡')) {{
+                            return '<span class="activity-cold">【整体活跃度】' + content + '</span>';
+                        }} else {{
+                            return '<span class="activity-neutral">【整体活跃度】' + content + '</span>';
+                        }}
+                    }});
+                    
+                    element.innerHTML = html;
+                }});
+            }}
         </script>
     </body>
     </html>
@@ -662,38 +695,50 @@ def generate_summary_html(summary_text):
     # 返回文件的相对路径
     return html_filename
 
-# AI 生成A股市场活跃度评估
-def generate_a_stock_activity_assessment(text):
-    completion = openai_client.chat.completions.create(
+# AI 生成市场活跃度评估
+def generate_market_activity_assessment(text):
+    # 生成A股情绪总结
+    a_share_completion = openai_client.chat.completions.create(
         model=model_name,
         messages=[
-            {"role": "system", "content": "你是一位经验丰富的A股市场情绪分析师。请基于以下财经新闻内容，评估当前A股市场的活跃度。输出格式要求：1.首先给出活跃度等级（活跃/中性/冷淡）；2.用一句话简要说明评估理由；3.整体输出不超过50字。活跃度判断标准：活跃-多条重大政策/并购/市场波动新闻；中性-常规财经新闻；冷淡-缺乏重要财经信息。"},
+            {"role": "system", "content": "你是一位经验丰富的A股情绪分析师。请基于以下财经新闻内容，评估A股市场的情绪状态。输出格式要求：1.首先给出情绪等级（积极/中性/消极）；2.用一句话简要说明评估理由；3.整体输出不超过30字。A股情绪判断标准：积极-政策利好/经济数据向好/市场上涨预期；中性-常规市场动态；消极-政策收紧/经济担忧/市场下跌风险。"},
             {"role": "user", "content": text}
         ]
     )
-    return completion.choices[0].message.content.strip()
-
-# AI 生成美股市场活跃度评估
-def generate_us_stock_activity_assessment(text):
-    completion = openai_client.chat.completions.create(
+    a_share_sentiment = a_share_completion.choices[0].message.content.strip()
+    
+    # 生成美股情绪总结
+    us_market_completion = openai_client.chat.completions.create(
         model=model_name,
         messages=[
-            {"role": "system", "content": "你是一位经验丰富的美股市场情绪分析师。请基于以下财经新闻内容，评估当前美股市场的活跃度。输出格式要求：1.首先给出活跃度等级（活跃/中性/冷淡）；2.用一句话简要说明评估理由；3.整体输出不超过50字。活跃度判断标准：活跃-多条重大政策/并购/市场波动新闻；中性-常规财经新闻；冷淡-缺乏重要财经信息。"},
+            {"role": "system", "content": "你是一位经验丰富的美股情绪分析师。请基于以下财经新闻内容，评估美股市场的情绪状态。输出格式要求：1.首先给出情绪等级（积极/中性/消极）；2.用一句话简要说明评估理由；3.整体输出不超过30字。美股情绪判断标准：积极-美联储鸽派/科技股利好/经济数据强劲；中性-常规市场动态；消极-加息担忧/地缘政治/经济衰退风险。"},
             {"role": "user", "content": text}
         ]
     )
-    return completion.choices[0].message.content.strip()
+    us_market_sentiment = us_market_completion.choices[0].message.content.strip()
+    
+    # 生成整体市场活跃度评估
+    overall_completion = openai_client.chat.completions.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": "你是一位经验丰富的整体市场活跃度分析师。请基于以下财经新闻内容，评估当前市场的整体活跃度。输出格式要求：1.首先给出活跃度等级（活跃/中性/冷淡）；2.用一句话简要说明评估理由；3.整体输出不超过50字。活跃度判断标准：活跃-多条重大政策/并购/市场波动新闻；中性-常规财经新闻；冷淡-缺乏重要财经信息。"},
+            {"role": "user", "content": text}
+        ]
+    )
+    overall_activity = overall_completion.choices[0].message.content.strip()
+    
+    # 返回包含A股情绪、美股情绪和整体活跃度的综合评估
+    return f"【A股情绪】{a_share_sentiment} | 【美股情绪】{us_market_sentiment} | 【整体活跃度】{overall_activity}"
 
 # AI 生成内容摘要（基于爬取的正文）
 def summarize(text):
-    # 生成A股和美股市场活跃度评估
-    a_stock_activity = generate_a_stock_activity_assessment(text)
-    us_stock_activity = generate_us_stock_activity_assessment(text)
+    # 首先生成市场活跃度评估
+    activity_assessment = generate_market_activity_assessment(text)
     
     completion = openai_client.chat.completions.create(
         model=model_name, 
         messages=[
-            {"role": "system", "content": f"你是一位经验丰富、逻辑严谨的财经新闻分析师，服务对象为券商分析师、基金经理、金融研究员、宏观策略师等专业人士。请基于以下财经新闻原文内容，完成高质量的内容理解与结构化总结，形成一份专业、精准、清晰的财经要点摘要，用于支持机构投资者的日常研判工作。【输出要求】1.首先输出**A股市场活跃度：**{a_stock_activity}；2.然后输出**美股市场活跃度：**{us_stock_activity}；3.全文控制在 2000 字以内，内容精炼、逻辑清晰；4.从宏观政策、金融市场、行业动态、公司事件、风险提示等角度进行分类总结；5.每一部分要突出数据支持、趋势研判、可能的市场影响；6.明确指出新闻背后的核心变量或政策意图，并提出投资视角下的参考意义；7.语气专业、严谨、无情绪化表达，适配专业机构投研阅读习惯；8.禁止套话，不重复新闻原文，可用条列式增强结构性；9.如涉及数据和预测，请标注来源或指出主张机构（如高盛、花旗等）；10.若原文较多内容无关财经市场，可酌情略去，只保留关键影响要素。"},
+            {"role": "system", "content": f"你是一位经验丰富、逻辑严谨的财经新闻分析师，服务对象为券商分析师、基金经理、金融研究员、宏观策略师等专业人士。请基于以下财经新闻原文内容，完成高质量的内容理解与结构化总结，形成一份专业、精准、清晰的财经要点摘要，用于支持机构投资者的日常研判工作。【输出要求】1.首先输出**市场活跃度：**{activity_assessment}；2.全文控制在 2000 字以内，内容精炼、逻辑清晰；3.从宏观政策、金融市场、行业动态、公司事件、风险提示等角度进行分类总结；4.每一部分要突出数据支持、趋势研判、可能的市场影响；5.明确指出新闻背后的核心变量或政策意图，并提出投资视角下的参考意义；6.语气专业、严谨、无情绪化表达，适配专业机构投研阅读习惯；7.禁止套话，不重复新闻原文，可用条列式增强结构性；8.如涉及数据和预测，请标注来源或指出主张机构（如高盛、花旗等）；9.若原文较多内容无关财经市场，可酌情略去，只保留关键影响要素。"},
             {"role": "user", "content": text}
         ]
     )
