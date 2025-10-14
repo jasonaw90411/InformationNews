@@ -598,15 +598,30 @@ def generate_summary_html(summary_text):
     # 返回文件的相对路径
     return html_filename
 
-# AI 生成内容摘要（基于爬取的正文）
-def summarize(text):
+# AI 生成市场活跃度评估
+def generate_market_activity_assessment(text):
     completion = openai_client.chat.completions.create(
-        model=model_name, 
+        model=model_name,
         messages=[
-            {"role": "system", "content":"你是一位经验丰富、逻辑严谨的财经新闻分析师，服务对象为券商分析师、基金经理、金融研究员、宏观策略师等专业人士。请基于以下财经新闻原文内容，完成高质量的内容理解与结构化总结，形成一份专业、精准、清晰的财经要点摘要，用于支持机构投资者的日常研判工作。【输出要求】1.全文控制在 2000 字以内，内容精炼、逻辑清晰；2.从宏观政策、金融市场、行业动态、公司事件、风险提示等角度进行分类总结；3.每一部分要突出数据支持、趋势研判、可能的市场影响；4.明确指出新闻背后的核心变量或政策意图，并提出投资视角下的参考意义；5.语气专业、严谨、无情绪化表达，适配专业机构投研阅读习惯；6.禁止套话，不重复新闻原文，可用条列式增强结构性；7.如涉及数据和预测，请标注来源或指出主张机构（如高盛、花旗等）；8.若原文较多内容无关财经市场，可酌情略去，只保留关键影响要素。"},
+            {"role": "system", "content": "你是一位经验丰富的市场情绪分析师。请基于以下财经新闻内容，评估当前市场的整体活跃度。输出格式要求：1.首先给出活跃度等级（活跃/中性/冷淡）；2.用一句话简要说明评估理由；3.整体输出不超过50字。活跃度判断标准：活跃-多条重大政策/并购/市场波动新闻；中性-常规财经新闻；冷淡-缺乏重要财经信息。"},
             {"role": "user", "content": text}
         ]
     )
+    return completion.choices[0].message.content.strip()
+
+# AI 生成内容摘要（基于爬取的正文）
+def summarize(text):
+    # 首先生成市场活跃度评估
+    activity_assessment = generate_market_activity_assessment(text)
+    
+    completion = openai_client.chat.completions.create(
+        model=model_name, 
+        messages=[
+            {"role": "system", "content": f"你是一位经验丰富、逻辑严谨的财经新闻分析师，服务对象为券商分析师、基金经理、金融研究员、宏观策略师等专业人士。请基于以下财经新闻原文内容，完成高质量的内容理解与结构化总结，形成一份专业、精准、清晰的财经要点摘要，用于支持机构投资者的日常研判工作。【输出要求】1.首先输出**市场活跃度：**{activity_assessment}；2.全文控制在 2000 字以内，内容精炼、逻辑清晰；3.从宏观政策、金融市场、行业动态、公司事件、风险提示等角度进行分类总结；4.每一部分要突出数据支持、趋势研判、可能的市场影响；5.明确指出新闻背后的核心变量或政策意图，并提出投资视角下的参考意义；6.语气专业、严谨、无情绪化表达，适配专业机构投研阅读习惯；7.禁止套话，不重复新闻原文，可用条列式增强结构性；8.如涉及数据和预测，请标注来源或指出主张机构（如高盛、花旗等）；9.若原文较多内容无关财经市场，可酌情略去，只保留关键影响要素。"},
+            {"role": "user", "content": text}
+        ]
+    )
+    
     return completion.choices[0].message.content.strip()
 
 # 获取微信公众号access_token
