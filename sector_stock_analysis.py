@@ -232,17 +232,21 @@ def filter_quality_a_stocks(stocks):
             if any(suffix in stock for suffix in ['.SS', '.SZ', '.HK']):
                 stock_code = stock
                 # 尝试查找准确的股票名称
-                # 遍历所有股票查找对应的名称
-                stock_name = stock
+                stock_name = stock_code  # 默认使用代码作为名称
                 global stock_data
+                found = False
                 if stock_data is not None:
                     for sector, sector_data in stock_data.get('popular_stocks_by_sector', {}).items():
                         for s in sector_data.get('stocks', []):
                             if s.get('code') == stock_code:
                                 stock_name = s.get('name')
+                                found = True
+                                print(f"✓ 找到股票: {stock_code} -> {stock_name}")
                                 break
-                        if stock_name != stock:
+                        if found:
                             break
+                if not found:
+                    print(f"⚠️  未找到股票名称: {stock_code}")
             else:
                 # 如果是股票名称，使用get_a_stock_info函数获取正确的代码和名称
                 stock_info = get_a_stock_info(stock)
@@ -625,7 +629,23 @@ def generate_a_stock_report():
         # 准备股票数据文本
         stock_data_text = "\n"
         for stock in quality_a_stocks:  
-            stock_data_text += f"## {stock['symbol']} - {stock['name']}\n"
+            # 使用更清晰的格式提供股票信息
+            stock_data_text += f"## 股票信息\n"
+            stock_data_text += f"- 代码: {stock['symbol']}\n"
+            stock_data_text += f"- 名称: {stock['name']}\n"
+            
+            # 尝试获取行业信息
+            industry = "待补充"
+            if stock_data is not None:
+                for sector, sector_data in stock_data.get('popular_stocks_by_sector', {}).items():
+                    for s in sector_data.get('stocks', []):
+                        if s.get('code') == stock['symbol']:
+                            industry = sector
+                            break
+                    if industry != "待补充":
+                        break
+            stock_data_text += f"- 行业: {industry}\n"
+            
             stock_data_text += f"- 当前股价: ¥{stock['current_price']:.2f}\n"
             stock_data_text += f"- 市盈率: {stock['pe_ratio']:.2f}\n" if stock['pe_ratio'] else "- 市盈率: 数据缺失\n"
             stock_data_text += f"- 利润率: {stock['profit_margin']:.2f}%\n" if stock['profit_margin'] else "- 利润率: 数据缺失\n"
