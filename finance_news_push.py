@@ -488,9 +488,9 @@ def generate_summary_html(summary_text):
             
             /* 市场情绪颜色样式 */
             .sentiment-positive {{
-                color: #27ae60 !important;
+                color: #e74c3c !important;
                 font-weight: bold;
-                background-color: #e8f5e8;
+                background-color: #fadbd8;
                 padding: 2px 6px;
                 border-radius: 4px;
             }}
@@ -504,33 +504,9 @@ def generate_summary_html(summary_text):
             }}
             
             .sentiment-negative {{
-                color: #e74c3c !important;
+                color: #3498db !important;
                 font-weight: bold;
-                background-color: #fadbd8;
-                padding: 2px 6px;
-                border-radius: 4px;
-            }}
-            
-            .activity-active {{
-                color: #8e44ad !important;
-                font-weight: bold;
-                background-color: #f4ecf7;
-                padding: 2px 6px;
-                border-radius: 4px;
-            }}
-            
-            .activity-neutral {{
-                color: #34495e !important;
-                font-weight: bold;
-                background-color: #ecf0f1;
-                padding: 2px 6px;
-                border-radius: 4px;
-            }}
-            
-            .activity-cold {{
-                color: #7f8c8d !important;
-                font-weight: bold;
-                background-color: #f8f9fa;
+                background-color: #e1f0fa;
                 padding: 2px 6px;
                 border-radius: 4px;
             }}
@@ -669,17 +645,6 @@ def generate_summary_html(summary_text):
                         }}
                     }});
                     
-                    // 处理整体活跃度
-                    html = html.replace(/【整体活跃度】([^<]*)/g, function(match, content) {{
-                        if (content.includes('活跃')) {{
-                            return '<span class="activity-active">【整体活跃度】' + content + '</span>';
-                        }} else if (content.includes('冷淡')) {{
-                            return '<span class="activity-cold">【整体活跃度】' + content + '</span>';
-                        }} else {{
-                            return '<span class="activity-neutral">【整体活跃度】' + content + '</span>';
-                        }}
-                    }});
-                    
                     element.innerHTML = html;
                 }});
             }}
@@ -701,7 +666,7 @@ def generate_market_activity_assessment(text):
     a_share_completion = openai_client.chat.completions.create(
         model=model_name,
         messages=[
-            {"role": "system", "content": "你是一位经验丰富的A股情绪分析师。请基于以下财经新闻内容，评估A股市场的情绪状态。输出格式要求：1.首先给出情绪等级（积极/中性/消极）；2.用一句话简要说明评估理由；3.整体输出不超过30字。A股情绪判断标准：积极-政策利好/经济数据向好/市场上涨预期；中性-常规市场动态；消极-政策收紧/经济担忧/市场下跌风险。"},
+            {"role": "system", "content": "你是一位经验丰富的A股情绪分析师。请基于以下财经新闻内容，评估A股市场的情绪状态。输出格式要求：1.首先给出情绪等级（积极/中性/消极）；2.用一句话简要说明评估理由，理由部分请加粗表示；3.整体输出不超过30字。A股情绪判断标准：积极-政策利好/经济数据向好/市场上涨预期；中性-常规市场动态；消极-政策收紧/经济担忧/市场下跌风险。"},
             {"role": "user", "content": text}
         ]
     )
@@ -711,24 +676,14 @@ def generate_market_activity_assessment(text):
     us_market_completion = openai_client.chat.completions.create(
         model=model_name,
         messages=[
-            {"role": "system", "content": "你是一位经验丰富的美股情绪分析师。请基于以下财经新闻内容，评估美股市场的情绪状态。输出格式要求：1.首先给出情绪等级（积极/中性/消极）；2.用一句话简要说明评估理由；3.整体输出不超过30字。美股情绪判断标准：积极-美联储鸽派/科技股利好/经济数据强劲；中性-常规市场动态；消极-加息担忧/地缘政治/经济衰退风险。"},
+            {"role": "system", "content": "你是一位经验丰富的美股情绪分析师。请基于以下财经新闻内容，评估美股市场的情绪状态。输出格式要求：1.首先给出情绪等级（积极/中性/消极）；2.用一句话简要说明评估理由，理由部分请加粗表示；3.整体输出不超过30字。美股情绪判断标准：积极-美联储鸽派/科技股利好/经济数据强劲；中性-常规市场动态；消极-加息担忧/地缘政治/经济衰退风险。"},
             {"role": "user", "content": text}
         ]
     )
     us_market_sentiment = us_market_completion.choices[0].message.content.strip()
     
-    # 生成整体市场活跃度评估
-    overall_completion = openai_client.chat.completions.create(
-        model=model_name,
-        messages=[
-            {"role": "system", "content": "你是一位经验丰富的整体市场活跃度分析师。请基于以下财经新闻内容，评估当前市场的整体活跃度。输出格式要求：1.首先给出活跃度等级（活跃/中性/冷淡）；2.用一句话简要说明评估理由；3.整体输出不超过50字。活跃度判断标准：活跃-多条重大政策/并购/市场波动新闻；中性-常规财经新闻；冷淡-缺乏重要财经信息。"},
-            {"role": "user", "content": text}
-        ]
-    )
-    overall_activity = overall_completion.choices[0].message.content.strip()
-    
-    # 返回包含A股情绪、美股情绪和整体活跃度的综合评估
-    return f"【A股情绪】{a_share_sentiment} | 【美股情绪】{us_market_sentiment} | 【整体活跃度】{overall_activity}"
+    # 返回包含A股情绪和美股情绪的综合评估
+    return f"【A股情绪】{a_share_sentiment} | 【美股情绪】{us_market_sentiment}"
 
 # AI 生成内容摘要（基于爬取的正文）
 def summarize(text):
