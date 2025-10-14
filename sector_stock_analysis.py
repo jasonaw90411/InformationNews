@@ -270,17 +270,17 @@ def filter_quality_a_stocks(stocks):
                 stock_name = stock_info[1]  # 使用JSON中定义的精确股票名称
             
             # 使用get_stock_data函数获取A股数据
-            stock_data = get_stock_data(stock_code)
+            stock_info_data = get_stock_data(stock_code)  # 重命名避免变量冲突
             
-            if not stock_data:
+            if not stock_info_data:
                 continue
             
             # 检查数据是否完整
-            if not all([stock_data['profile'], stock_data['metrics'], stock_data['candles']]):
+            if not all([stock_info_data['profile'], stock_info_data['metrics'], stock_info_data['candles']]):
                 continue
             
             # 筛选条件1: 有正的盈利
-            metrics = stock_data['metrics'].get('metric', {})
+            metrics = stock_info_data['metrics'].get('metric', {})
             # 尝试不同的市盈率字段名称
             pe_ratio = metrics.get('peNormalizedAnnual', 0)
             if pe_ratio == 0:
@@ -304,7 +304,7 @@ def filter_quality_a_stocks(stocks):
             # 不强制要求利润率数据，允许缺失
             
             # 获取近期表现数据，使用更长的周期（如5天）
-            candles = stock_data['candles']
+            candles = stock_info_data['candles']
             if 'c' in candles and len(candles['c']) >= 5:
                 # 使用5天周期计算近期表现
                 close_prices = candles['c']
