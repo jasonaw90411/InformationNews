@@ -5,7 +5,7 @@ name: Finance News Push
 
 on:
   schedule:
-    - cron: '30 23 * * 0-4'
+    - cron: '0 1 * * 1-5'
     - cron: '30 6 * * 1-5'   # 北京时间下午2:30（周一到周五）
     - cron: '0 13 * * 1-5'
   workflow_dispatch:
