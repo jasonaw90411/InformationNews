@@ -236,17 +236,29 @@ def filter_quality_a_stocks(stocks):
                 global stock_data
                 found = False
                 if stock_data is not None:
+                    print(f"🔍 正在查找股票代码: {stock_code}")
+                    # 遍历所有板块查找股票
                     for sector, sector_data in stock_data.get('popular_stocks_by_sector', {}).items():
                         for s in sector_data.get('stocks', []):
-                            if s.get('code') == stock_code:
-                                stock_name = s.get('name')
+                            # 获取股票代码并去除可能的空格
+                            s_code = s.get('code', '').strip()
+                            # 直接比较完整代码
+                            if s_code == stock_code:
+                                stock_name = s.get('name', stock_code)
                                 found = True
-                                print(f"✓ 找到股票: {stock_code} -> {stock_name}")
+                                print(f"✓ 找到股票: {stock_code} -> {stock_name} (板块: {sector})")
                                 break
                         if found:
                             break
                 if not found:
                     print(f"⚠️  未找到股票名称: {stock_code}")
+                    # 尝试打印所有可用的股票代码用于调试
+                    print("📋 部分可用股票代码示例:")
+                    if stock_data is not None:
+                        for sector, sector_data in stock_data.get('popular_stocks_by_sector', {}).items():
+                            for i, s in enumerate(sector_data.get('stocks', [])[:3]):  # 只打印每个板块前3个
+                                print(f"   {s.get('code', 'Unknown')} -> {s.get('name', 'Unknown')}")
+                            break  # 只打印第一个板块的示例
             else:
                 # 如果是股票名称，使用get_a_stock_info函数获取正确的代码和名称
                 stock_info = get_a_stock_info(stock)
