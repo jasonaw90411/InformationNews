@@ -623,25 +623,25 @@ def generate_summary_html(summary_text):
                 elements.forEach(element => {{
                     let html = element.innerHTML;
                     
-                    // 处理A股情绪 - 更新正则表达式以处理包含HTML标签的情况
-                    html = html.replace(/【A股情绪】((?:(?!<br\s*\/?>)[\s\S])*?)<br>/g, function(match, content) {{
-                        if (content.includes('积极')) {{
-                            return '<span class="sentiment-positive">【A股情绪】' + content + '</span><br>';
-                        }} else if (content.includes('消极')) {{
-                            return '<span class="sentiment-negative">【A股情绪】' + content + '</span><br>';
+                    // 处理A股情绪 - 更新正则表达式以匹配实际格式
+                    html = html.replace(/A股情绪：([^<]*)<br>/g, function(match, sentiment) {{
+                        if (sentiment.includes('积极')) {{
+                            return '<span class="sentiment-positive">A股情绪：' + sentiment + '</span><br>';
+                        }} else if (sentiment.includes('消极')) {{
+                            return '<span class="sentiment-negative">A股情绪：' + sentiment + '</span><br>';
                         }} else {{
-                            return '<span class="sentiment-neutral">【A股情绪】' + content + '</span><br>';
+                            return '<span class="sentiment-neutral">A股情绪：' + sentiment + '</span><br>';
                         }}
                     }});
                     
-                    // 处理美股情绪 - 更新正则表达式以处理包含HTML标签的情况
-                    html = html.replace(/【美股情绪】((?:(?!<br\s*\/?>)[\s\S])*?)<br>/g, function(match, content) {{
-                        if (content.includes('积极')) {{
-                            return '<span class="sentiment-positive">【美股情绪】' + content + '</span><br>';
-                        }} else if (content.includes('消极')) {{
-                            return '<span class="sentiment-negative">【美股情绪】' + content + '</span><br>';
+                    // 处理美股情绪 - 更新正则表达式以匹配实际格式
+                    html = html.replace(/美股情绪：([^<]*)<br>/g, function(match, sentiment) {{
+                        if (sentiment.includes('积极')) {{
+                            return '<span class="sentiment-positive">美股情绪：' + sentiment + '</span><br>';
+                        }} else if (sentiment.includes('消极')) {{
+                            return '<span class="sentiment-negative">美股情绪：' + sentiment + '</span><br>';
                         }} else {{
-                            return '<span class="sentiment-neutral">【美股情绪】' + content + '</span><br>';
+                            return '<span class="sentiment-neutral">美股情绪：' + sentiment + '</span><br>';
                         }}
                     }});
                     
