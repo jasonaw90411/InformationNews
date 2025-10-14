@@ -623,25 +623,25 @@ def generate_summary_html(summary_text):
                 elements.forEach(element => {{
                     let html = element.innerHTML;
                     
-                    // 处理A股情绪
-                    html = html.replace(/【A股情绪】([^<]*)/g, function(match, content) {{
+                    // 处理A股情绪 - 更新正则表达式以处理包含HTML标签的情况
+                    html = html.replace(/【A股情绪】((?:(?!<br\s*\/?>)[\s\S])*?)<br>/g, function(match, content) {{
                         if (content.includes('积极')) {{
-                            return '<span class="sentiment-positive">【A股情绪】' + content + '</span>';
+                            return '<span class="sentiment-positive">【A股情绪】' + content + '</span><br>';
                         }} else if (content.includes('消极')) {{
-                            return '<span class="sentiment-negative">【A股情绪】' + content + '</span>';
+                            return '<span class="sentiment-negative">【A股情绪】' + content + '</span><br>';
                         }} else {{
-                            return '<span class="sentiment-neutral">【A股情绪】' + content + '</span>';
+                            return '<span class="sentiment-neutral">【A股情绪】' + content + '</span><br>';
                         }}
                     }});
                     
-                    // 处理美股情绪
-                    html = html.replace(/【美股情绪】([^<]*)/g, function(match, content) {{
+                    // 处理美股情绪 - 更新正则表达式以处理包含HTML标签的情况
+                    html = html.replace(/【美股情绪】((?:(?!<br\s*\/?>)[\s\S])*?)<br>/g, function(match, content) {{
                         if (content.includes('积极')) {{
-                            return '<span class="sentiment-positive">【美股情绪】' + content + '</span>';
+                            return '<span class="sentiment-positive">【美股情绪】' + content + '</span><br>';
                         }} else if (content.includes('消极')) {{
-                            return '<span class="sentiment-negative">【美股情绪】' + content + '</span>';
+                            return '<span class="sentiment-negative">【美股情绪】' + content + '</span><br>';
                         }} else {{
-                            return '<span class="sentiment-neutral">【美股情绪】' + content + '</span>';
+                            return '<span class="sentiment-neutral">【美股情绪】' + content + '</span><br>';
                         }}
                     }});
                     
@@ -666,7 +666,7 @@ def generate_market_activity_assessment(text):
     a_share_completion = openai_client.chat.completions.create(
         model=model_name,
         messages=[
-            {"role": "system", "content": "你是一位经验丰富的A股情绪分析师。请基于以下财经新闻内容，评估A股市场的情绪状态。输出格式要求：1.首先给出情绪等级（积极/中性/消极）；2.用一句话简要说明评估理由，理由部分请加粗表示；3.整体输出不超过30字。A股情绪判断标准：积极-政策利好/经济数据向好/市场上涨预期；中性-常规市场动态；消极-政策收紧/经济担忧/市场下跌风险。"},
+            {"role": "system", "content": "你是一位经验丰富的A股情绪分析师。请基于以下财经新闻内容，评估A股市场的情绪状态。输出格式要求：1.首先给出情绪等级（积极/中性/消极）；2.用一句话简要说明评估理由，理由请用<strong>标签包裹使其加粗显示；3.整体输出不超过30字。A股情绪判断标准：积极-政策利好/经济数据向好/市场上涨预期；中性-常规市场动态；消极-政策收紧/经济担忧/市场下跌风险。"},
             {"role": "user", "content": text}
         ]
     )
@@ -676,7 +676,7 @@ def generate_market_activity_assessment(text):
     us_market_completion = openai_client.chat.completions.create(
         model=model_name,
         messages=[
-            {"role": "system", "content": "你是一位经验丰富的美股情绪分析师。请基于以下财经新闻内容，评估美股市场的情绪状态。输出格式要求：1.首先给出情绪等级（积极/中性/消极）；2.用一句话简要说明评估理由，理由部分请加粗表示；3.整体输出不超过30字。美股情绪判断标准：积极-美联储鸽派/科技股利好/经济数据强劲；中性-常规市场动态；消极-加息担忧/地缘政治/经济衰退风险。"},
+            {"role": "system", "content": "你是一位经验丰富的美股情绪分析师。请基于以下财经新闻内容，评估美股市场的情绪状态。输出格式要求：1.首先给出情绪等级（积极/中性/消极）；2.用一句话简要说明评估理由，理由请用<strong>标签包裹使其加粗显示；3.整体输出不超过30字。美股情绪判断标准：积极-美联储鸽派/科技股利好/经济数据强劲；中性-常规市场动态；消极-加息担忧/地缘政治/经济衰退风险。"},
             {"role": "user", "content": text}
         ]
     )
@@ -693,7 +693,7 @@ def summarize(text):
     completion = openai_client.chat.completions.create(
         model=model_name, 
         messages=[
-            {"role": "system", "content": f"你是一位经验丰富、逻辑严谨的财经新闻分析师，服务对象为券商分析师、基金经理、金融研究员、宏观策略师等专业人士。请基于以下财经新闻原文内容，完成高质量的内容理解与结构化总结，形成一份专业、精准、清晰的财经要点摘要，用于支持机构投资者的日常研判工作。【输出要求】1.首先输出**市场活跃度：**{activity_assessment}；2.全文控制在 2000 字以内，内容精炼、逻辑清晰；3.从宏观政策、金融市场、行业动态、公司事件、风险提示等角度进行分类总结；4.每一部分要突出数据支持、趋势研判、可能的市场影响；5.明确指出新闻背后的核心变量或政策意图，并提出投资视角下的参考意义；6.语气专业、严谨、无情绪化表达，适配专业机构投研阅读习惯；7.禁止套话，不重复新闻原文，可用条列式增强结构性；8.如涉及数据和预测，请标注来源或指出主张机构（如高盛、花旗等）；9.若原文较多内容无关财经市场，可酌情略去，只保留关键影响要素。"},
+            {"role": "system", "content": f"你是一位经验丰富、逻辑严谨的财经新闻分析师，服务对象为券商分析师、基金经理、金融研究员、宏观策略师等专业人士。请基于以下财经新闻原文内容，完成高质量的内容理解与结构化总结，形成一份专业、精准、清晰的财经要点摘要，用于支持机构投资者的日常研判工作。【输出要求】1.首先输出{activity_assessment}；2.全文控制在 2000 字以内，内容精炼、逻辑清晰；3.从宏观政策、金融市场、行业动态、公司事件、风险提示等角度进行分类总结；4.每一部分要突出数据支持、趋势研判、可能的市场影响；5.明确指出新闻背后的核心变量或政策意图，并提出投资视角下的参考意义；6.语气专业、严谨、无情绪化表达，适配专业机构投研阅读习惯；7.禁止套话，不重复新闻原文，可用条列式增强结构性；8.如涉及数据和预测，请标注来源或指出主张机构（如高盛、花旗等）；9.若原文较多内容无关财经市场，可酌情略去，只保留关键影响要素。"},
             {"role": "user", "content": text}
         ]
     )
