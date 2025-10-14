@@ -496,7 +496,7 @@ def generate_summary_html(summary_text):
             }}
             
             .sentiment-neutral {{
-                color: #f39c12 !important;
+                color: #ffb239 !important;
                 font-weight: bold;
                 background-color: #fef9e7;
                 padding: 2px 6px;
@@ -690,11 +690,23 @@ def summarize(text):
     # 首先生成市场活跃度评估
     activity_assessment = generate_market_activity_assessment(text)
     
+    # 分离A股和美股情绪，简化LLM理解
+    a_share_sentiment = ""
+    us_market_sentiment = ""
+    
+    if "【A股情绪】" in activity_assessment and "【美股情绪】" in activity_assessment:
+        parts = activity_assessment.split(" | ")
+        for part in parts:
+            if "【A股情绪】" in part:
+                a_share_sentiment = part.replace("【A股情绪】", "").strip()
+            elif "【美股情绪】" in part:
+                us_market_sentiment = part.replace("【美股情绪】", "").strip()
+    
     completion = openai_client.chat.completions.create(
         model=model_name, 
         messages=[
-            {"role": "system", "content": f"你是一位经验丰富、逻辑严谨的财经新闻分析师，服务对象为券商分析师、基金经理、金融研究员、宏观策略师等专业人士。请基于以下财经新闻原文内容，完成高质量的内容理解与结构化总结，形成一份专业、精准、清晰的财经要点摘要，用于支持机构投资者的日常研判工作。【输出要求】1.首先输出{activity_assessment}；2.全文控制在 2000 字以内，内容精炼、逻辑清晰；3.从宏观政策、金融市场、行业动态、公司事件、风险提示等角度进行分类总结；4.每一部分要突出数据支持、趋势研判、可能的市场影响；5.明确指出新闻背后的核心变量或政策意图，并提出投资视角下的参考意义；6.语气专业、严谨、无情绪化表达，适配专业机构投研阅读习惯；7.禁止套话，不重复新闻原文，可用条列式增强结构性；8.如涉及数据和预测，请标注来源或指出主张机构（如高盛、花旗等）；9.若原文较多内容无关财经市场，可酌情略去，只保留关键影响要素。"},
-            {"role": "user", "content": text}
+            {"role": "system", "content": f"你是一位经验丰富、逻辑严谨的财经新闻分析师，服务对象为券商分析师、基金经理、金融研究员、宏观策略师等专业人士。请基于以下财经新闻原文内容，完成高质量的内容理解与结构化总结，形成一份专业、精准、清晰的财经要点摘要，用于支持机构投资者的日常研判工作。【输出要求】1.首先分别输出A股情绪评估和美股情绪评估，格式为：A股情绪：[情绪等级及理由]；美股情绪：[情绪等级及理由]；2.全文控制在 2000 字以内，内容精炼、逻辑清晰；3.从宏观政策、金融市场、行业动态、公司事件、风险提示等角度进行分类总结；4.每一部分要突出数据支持、趋势研判、可能的市场影响；5.明确指出新闻背后的核心变量或政策意图，并提出投资视角下的参考意义；6.语气专业、严谨、无情绪化表达，适配专业机构投研阅读习惯；7.禁止套话，不重复新闻原文，可用条列式增强结构性；8.如涉及数据和预测，请标注来源或指出主张机构（如高盛、花旗等）；9.若原文较多内容无关财经市场，可酌情略去，只保留关键影响要素。"},
+            {"role": "user", "content": f"A股情绪：{a_share_sentiment}\n美股情绪：{us_market_sentiment}\n\n财经新闻内容：{text}"}
         ]
     )
     
