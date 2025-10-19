@@ -8,6 +8,7 @@ on:
     - cron: '30 0 * * 1-5'
     - cron: '5 6 * * 1-5'   
     - cron: '0 13 * * 1-5'
+    - cron: '0 14 * * 7'
   workflow_dispatch:
     inputs:
       ai_service:
